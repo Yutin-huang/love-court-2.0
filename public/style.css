@@ -1,0 +1,215 @@
+/* 全站統一設定 */
+* {
+  box-sizing: border-box;
+}
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  min-height: 100vh;
+  font-family: 'Courier New', monospace;
+  overflow-y: auto;
+}
+
+/* ✅ 背景圖設定（桌機／手機共用） */
+.responsive-wrapper {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  background-image: url('bg6.JPG');
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-color: #ffe6f0;
+  overflow: hidden;
+}
+@media (max-width: 480px) {
+  .responsive-wrapper {
+    background-image: url('mobile6.jpg');
+    background-size: contain;
+  }
+}
+
+/* ✅ 控訴區塊（輸入框 + 按鈕） */
+.content {
+  position: absolute;
+  bottom: 8vh;
+  left: 0;
+  width: 100%;
+  padding: 0 6vw;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: center;
+  z-index: 1;
+}
+@media (max-width: 480px) {
+  .content {
+    padding: 4vh 6vw;
+  }
+}
+
+/* ✅ 輸入框樣式 */
+.input-box {
+  width: 100%;
+  height: 20vh;
+  font-size: clamp(16px, 2.5vw, 24px);
+  padding: 12px;
+  border: 3px solid #ff80aa;
+  background-color: #fff0f5;
+  resize: none;
+  box-shadow: 2px 2px #ffaacc;
+  margin-bottom: 4vh;
+  border-radius: 8px;
+}
+@media (max-width: 480px) {
+  .input-box {
+    height: 14vh;
+    font-size: 14px;
+    margin-bottom: 2vh;
+  }
+}
+
+/* ✅ 審判按鈕 */
+#submit-btn {
+  font-family: 'Press Start 2P', cursive;
+  font-size: 12px;
+  padding: 10px 20px;
+  background-color: #ffc0cb;
+  border: 3px solid #ff69b4;
+  border-radius: 8px;
+  color: white;
+  box-shadow: 2px 2px #ff69b4;
+  cursor: pointer;
+  transition: transform 0.1s ease;
+}
+#submit-btn:hover {
+  transform: scale(1.05);
+}
+
+#verdict-screen {
+  position: fixed; /* ✅ 讓它跳脫背景 */
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 9999; /* ✅ 保證在最上層 */
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 40px 20px;
+  background-color: rgba(255, 240, 250, 0.7);
+}
+#verdict-text {
+  position: relative;
+  width: 85%;
+  max-width: 320px;
+  margin: 0 auto;
+  padding: 24px 16px;
+  border-radius: 12px;
+  text-align: center;
+  background-color: rgba(255, 255, 255, 0.75);
+  font-family: 'Press Start 2P', cursive;
+  color: #ff1493;
+  line-height: 1.6;
+}
+
+/* ✅ 判決文字樣式 */
+.verdict-title {
+  font-family: 'Noto Serif TC', '標楷體', serif;
+  font-size: 16px;
+  font-weight: bold;
+  color: #ff66cc;
+  margin-bottom: 12px;
+}
+.verdict-crime {
+  font-family: 'Noto Sans TC', '微軟正黑體', sans-serif;
+  font-size: 14px;
+  font-weight: bold;
+  color: #ff3399;
+  margin-bottom: 12px;
+}
+.verdict-suggestion {
+  font-size: 16px;
+  color: #cc3399;
+  margin-bottom: 8px;
+}
+.verdict-judgement {
+  font-size: 13px;
+  color: #e6488e;
+  line-height: 1.8;
+}
+
+/* ✅ 再上訴按鈕 */
+.retry-btn {
+  margin-top: 20px;
+  padding: 10px 20px;
+  font-family: 'Press Start 2P', cursive;
+  background-color: #ff69b4;
+  color: white;
+  border: none;
+  font-size: 10px;
+  cursor: pointer;
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.verdict-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 20px;
+}
+/* ✅ 前往收聽按鈕 */
+.listen-btn {
+  margin-top: 20px;
+  padding: 10px 20px;
+  font-family: 'Press Start 2P', cursive;
+  background-color: #ff69b4;
+  color: white;
+  border: none;
+  font-size: 10px;
+  cursor: pointer;
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.listen-btn:hover {
+  background-color: #ffe6f0;
+  border-color: #ff99cc;
+}
+
+
+
+/* ✅ 動畫與通用設定 */
+.hidden {
+  display: none !important;
+}
+.loading {
+  position: absolute;
+  top: 25%;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: 'Press Start 2P', cursive;
+  font-size: 12px;
+  color: #ff69b4;
+  animation: bounce 1s infinite ease-in-out;
+}
+@keyframes bounce {
+  0%, 100% { transform: translate(-50%, 0); }
+  50% { transform: translate(-50%, -10px); }
+}
+@keyframes verdictIn {
+  0% { transform: translate(-50%, -50%) scale(0) rotate(-30deg); opacity: 0; }
+  70% { transform: translate(-50%, -50%) scale(1.05) rotate(5deg); opacity: 1; }
+  100% { transform: translate(-50%, -50%) scale(1) rotate(0deg); }
+}
+
+/* ✅ 音效隱藏 */
+#audio-player,
+#sound-effect {
+  display: none;
+}

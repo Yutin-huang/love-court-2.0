@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>戀愛法庭</title>
+
+  <!-- 外部樣式表 -->
+  <link rel="stylesheet" href="/style.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC&family=Noto+Serif+TC:wght@400;700&family=Press+Start+2P&display=swap" rel="stylesheet">
+
+  <style>
+    html, body {
+      overflow: hidden;
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      touch-action: none;
+    }
+
+    * {
+      box-sizing: border-box;
+      max-width: 100vw;
+      max-height: 100vh;
+    }
+
+    .responsive-wrapper {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    .bg {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      object-fit: contain; /* ✅ 確保完整圖片呈現 */
+      object-position: center;
+      z-index: 0;
+      background-color: #ffe6f0;
+      transition: all 0.3s ease;
+    }
+
+    @media (max-width: 480px) {
+      .responsive-wrapper {
+        background-image: url('mobile6.jpg');
+        background-size: contain;
+        background-position: center;
+        background-repeat: no-repeat;
+        background-color: #ffe6f0;
+      }
+    }
+
+    .content {
+      position: relative;
+      z-index: 1;
+      height: 100%;
+      padding: 8vh 6vw;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      align-items: center;
+    }
+
+    .input-box {
+      width: 100%;
+      height: 20vh;
+      font-size: clamp(14px, 2.5vw, 24px);
+      padding: 12px;
+      border: 3px solid #ff80aa;
+      background-color: #fff0f5;
+      resize: none;
+      box-shadow: 2px 2px #ffaacc;
+      margin-bottom: 4vh;
+      border-radius: 8px;
+    }
+
+
+    #submit-btn {
+      font-family: 'Press Start 2P', cursive;
+      font-size: 12px;
+      padding: 10px 20px;
+      background-color: #ffc0cb;
+      border: 3px solid #ff69b4;
+      border-radius: 8px;
+      color: white;
+      box-shadow: 2px 2px #ff69b4;
+      cursor: pointer;
+    }
+    .hidden {
+      display: none !important;
+    }
+  </style>
+</head>
+
+<body>
+  <main>
+  <!-- 🏛 主畫面 -->
+  <div class="responsive-wrapper">
+    <div class="content">
+      <textarea id="complaint" class="input-box" placeholder="請輸入你的戀愛控訴..."></textarea>
+      <button id="submit-btn" class="submit-btn">審判！</button>
+    </div>
+  </div>
+
+<!-- ⚖️ 判決畫面 -->
+<div id="verdict-screen" class="verdict-popup hidden">
+  <div id="verdict-capture">
+   <div id="loading-animation" class="loading hidden">⚖️ 正在審判中...</div>
+   <div id="verdict-text" class="hidden">
+     <p class="verdict-title">🧑‍⚖️ 戀愛判決書</p>
+     <p class="verdict-crime"></p>
+     <p class="verdict-suggestion"></p>
+     <p class="verdict-judgement"></p>
+  
+
+    <!-- ✅ 新增按鈕區塊 -->
+     <div class="verdict-buttons">
+       <button id="retry-btn" class="retry-btn hidden">再上訴！</button>
+       <a href="https://linktr.ee/Yutin_Huang" target="_blank" class="listen-btn">前往收聽</a>
+     </div>
+    </div>
+  </div>
+</div>
+
+
+    <!-- 🔊 音效 -->
+    <audio id="sound-effect" preload="auto">
+      <source src="gavel-sound.wav" type="audio/wav" />
+    </audio>
+
+    <!-- 🎵 判決背景音樂 -->
+    <audio id="verdict-music" src="mysong.wav" loop></audio>
+
+    <!-- 🔧 JavaScript -->
+    <script src="script.js" defer></script>
+  </main>
+</body>
+</html>
