@@ -288,13 +288,34 @@ function pickRandom(arr) {
   return arr[Math.floor(Math.random() * arr.length)];
 }
 
+/** 前任／已結束關係 → 推播走「過去回憶與心碎／安全感」 */
+const RE_EX_PARTNER =
+  /(前男友|前任男友|前女友|前任女友|前伴侶|前任伴侶)/;
+
+/** 現任伴侶語境 → 推播走「戀愛進行式與鬥嘴／罪魁禍首」（需排除 RE_EX_PARTNER） */
+function testCurrentPartnerForMusic(content) {
+  return (
+    /(男朋友|現任|另一半)/.test(content) ||
+    /(?<![前])男友/.test(content) ||
+    /(?<![前])女友/.test(content) ||
+    /(?<![前])伴侶/.test(content)
+  );
+}
+
 function inferCaseTypeFromText(text) {
   const content = (text || '').toLowerCase();
   if (!content) return '';
 
+  // 前任不算現任戀愛鬥嘴場景
+  if (RE_EX_PARTNER.test(content)) {
+    return '';
+  }
+
   // User requested these scenarios to always map to 罪魁禍首 (戀愛進行式與鬥嘴)
   if (
-    /(曖昧|現任|男友|女友|戀愛中|小抱怨|打情罵俏|鬥嘴|吵嘴|拌嘴)/.test(content)
+    /(曖昧|現任|男朋友|(?<![前])男友|(?<![前])女友|(?<![前])伴侶|另一半|戀愛中|小抱怨|打情罵俏|鬥嘴|吵嘴|拌嘴)/.test(
+      content
+    )
   ) {
     return '戀愛進行式與鬥嘴';
   }
@@ -355,13 +376,34 @@ function buildMusicPayload(folderName, caseType, audioFile, coverFile) {
 
 function pickRecommendedMusic(caseType, textForFallback) {
   const content = (textForFallback || '').toLowerCase();
-  const forceBoyfriendToKuikui = /(男友|男朋友|現任|另一半)/.test(content);
+  const isExPartner = RE_EX_PARTNER.test(content);
+  const forceBoyfriendToKuikui =
+    !isExPartner && testCurrentPartnerForMusic(content);
   const inferredType = inferCaseTypeFromText(textForFallback);
   const normalizedType =
     (forceBoyfriendToKuikui && '戀愛進行式與鬥嘴') ||
     CASE_TYPES.find((t) => caseType?.includes?.(t)) ||
     inferredType ||
     '';
+
+  // 控訴對象／內文為前任 → 過去回憶與心碎 或 安全感（隨機）
+  if (isExPartner) {
+    const exTypes = ['過去回憶與心碎', '安全感'];
+    const chosenType = pickRandom(exTypes);
+    const folderName = CASE_TYPE_TO_FOLDER[chosenType];
+    if (folderName) {
+      const { audioFiles, coverFiles } = listFolderMedia(folderName);
+      const audioFile = pickRandom(audioFiles);
+      const coverFile = pickCoverForAudio(audioFile, coverFiles);
+      const payload = buildMusicPayload(
+        folderName,
+        chosenType,
+        audioFile,
+        coverFile
+      );
+      if (payload) return payload;
+    }
+  }
 
   // 1) Try normalized/inferred folder first
   if (normalizedType) {
