@@ -71,18 +71,17 @@ function firstLineIncluding(verdict, keywords) {
  * prime recommended audio in user gesture (submit click).
  */
 async function primeRecommendedAudioForMobile() {
-  if (isAudioPrimed || !recommendedAudioEl) return;
+  if (isAudioPrimed) return;
   try {
     const unlockSrc = soundEffect?.currentSrc || "/gavel-sound.wav";
-    recommendedAudioEl.src = unlockSrc;
-    recommendedAudioEl.muted = true;
-    recommendedAudioEl.playsInline = true;
-    await recommendedAudioEl.play();
-    recommendedAudioEl.pause();
-    recommendedAudioEl.currentTime = 0;
-    recommendedAudioEl.removeAttribute("src");
-    recommendedAudioEl.load();
-    recommendedAudioEl.muted = false;
+    // Use a temporary audio object to avoid racing/overwriting the real
+    // recommended music element.
+    const primer = new Audio(unlockSrc);
+    primer.muted = true;
+    primer.playsInline = true;
+    await primer.play();
+    primer.pause();
+    primer.currentTime = 0;
     isAudioPrimed = true;
   } catch (err) {
     // Ignore prime failure; manual tap fallback is handled later.
@@ -418,7 +417,7 @@ submitBtn.addEventListener("click", async () => {
   const story = complaintInput.value.trim();
   if (!story) return;
   const accused = accusedInput ? accusedInput.value.trim() : "";
-  primeRecommendedAudioForMobile();
+  await primeRecommendedAudioForMobile();
 
   currentVerdictId = null;
   if (mediationApplyBtn) hide(mediationApplyBtn);
