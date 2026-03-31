@@ -1,17 +1,16 @@
-// ✅ ES Module 語法
 import 'dotenv/config';
-console.log("KEY:", process.env.OPENAI_API_KEY);
-import 'dotenv/config';
+
 import express from 'express';
 import path from 'path';
 import mongoose from 'mongoose';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
+
 import verdictRouter from './verdict-gpt.js';
+import mediationRouter from './routes/mediation.js';
 import logRouter from './routes/log.js';
 
 // ✅ 初始化
-dotenv.config();
 const app = express();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -30,6 +29,7 @@ app.use(express.json());
 
 // ✅ 路由設定
 app.use('/api/verdict', verdictRouter); // AI 判決 API
+app.use('/api/mediation', mediationRouter); // 調停 API
 app.use('/', logRouter);                // 後台紀錄頁面
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
@@ -40,4 +40,3 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`🚀 Server running at http://localhost:${PORT}`);
 });
-

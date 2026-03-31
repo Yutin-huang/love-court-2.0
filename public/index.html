@@ -7,7 +7,7 @@
 
   <!-- 外部樣式表 -->
   <link rel="stylesheet" href="/style.css" />
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC&family=Noto+Serif+TC:wght@400;700&family=Press+Start+2P&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700&family=Noto+Sans+TC&family=Noto+Serif+TC:wght@400;700&family=Press+Start+2P&display=swap" rel="stylesheet">
 
   <style>
     html, body {
@@ -44,8 +44,8 @@
 
     @media (max-width: 480px) {
       .responsive-wrapper {
-        background-image: url('mobile6.jpg');
-        background-size: contain;
+        background-image: url('/images/lovecourt-bg.png');
+        background-size: cover;
         background-position: center;
         background-repeat: no-repeat;
         background-color: #ffe6f0;
@@ -53,40 +53,100 @@
     }
 
     .content {
-      position: relative;
+      position: absolute;
       z-index: 1;
-      height: 100%;
-      padding: 8vh 6vw;
+      left: 0;
+      width: 100%;
+      top: 50%;
+      transform: translateY(-50%);
+      padding: 0 6vw;
       display: flex;
       flex-direction: column;
-      justify-content: flex-end;
+      justify-content: center;
       align-items: center;
+      gap: 10px;
     }
 
+    @media (max-width: 480px) {
+      .content {
+        top: 52%;
+        padding: 0 6vw;
+      }
+    }
+
+    .field-label {
+      width: min(90vw, 620px);
+      text-align: left;
+      font-family: 'Noto Sans TC', sans-serif;
+      font-size: clamp(13px, 2vw, 17px);
+      color: #4e669e;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+    }
+
+    .input-single, .input-select {
+      width: min(90vw, 620px);
+      font-size: clamp(14px, 2.5vw, 20px);
+      padding: 10px 12px;
+      border: 2px solid rgba(141, 164, 223, 0.8);
+      background-color: rgba(255, 255, 255, 0.45);
+      border-radius: 14px;
+      margin-bottom: 2px;
+      box-shadow: 0 8px 20px rgba(111, 144, 224, 0.2);
+      backdrop-filter: blur(2px);
+      -webkit-backdrop-filter: blur(2px);
+    }
     .input-box {
-      width: 100%;
-      height: 20vh;
+      width: min(90vw, 620px);
+      height: min(40vh, 320px);
       font-size: clamp(14px, 2.5vw, 24px);
-      padding: 12px;
-      border: 3px solid #ff80aa;
-      background-color: #fff0f5;
+      padding: 16px;
+      border: 2px solid rgba(141, 164, 223, 0.8);
+      background-color: rgba(255, 255, 255, 0.45);
       resize: none;
-      box-shadow: 2px 2px #ffaacc;
-      margin-bottom: 4vh;
-      border-radius: 8px;
+      box-shadow: 0 12px 24px rgba(111, 144, 224, 0.22);
+      margin-bottom: 6px;
+      border-radius: 18px;
+      color: #40507c;
+      backdrop-filter: blur(2px);
+      -webkit-backdrop-filter: blur(2px);
+    }
+    .input-box::placeholder,
+    .input-single::placeholder {
+      color: rgba(64, 80, 124, 0.55);
     }
 
 
     #submit-btn {
-      font-family: 'Press Start 2P', cursive;
-      font-size: 12px;
-      padding: 10px 20px;
-      background-color: #ffc0cb;
-      border: 3px solid #ff69b4;
-      border-radius: 8px;
-      color: white;
-      box-shadow: 2px 2px #ff69b4;
+      width: min(86vw, 520px);
+      height: 74px;
+      margin-top: 8px;
+      font-family: 'Baloo 2', 'Noto Sans TC', sans-serif;
+      font-size: clamp(24px, 4vw, 46px);
+      font-weight: 700;
+      letter-spacing: 1px;
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.88) 0%, rgba(240, 245, 255, 0.92) 100%);
+      border: 3px solid #9eb5e7;
+      border-radius: 999px;
+      color: #4f73b8;
+      box-shadow: 0 8px 0 #90a8dd, 0 12px 28px rgba(119, 151, 223, 0.28);
       cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      transition: transform 0.12s ease, box-shadow 0.12s ease;
+    }
+    #submit-btn::before {
+      content: "📖💗";
+      font-size: 26px;
+    }
+    #submit-btn:hover {
+      transform: translateY(-1px);
+    }
+    #submit-btn:active {
+      transform: translateY(2px);
+      box-shadow: 0 6px 0 #90a8dd, 0 9px 18px rgba(119, 151, 223, 0.24);
     }
     .hidden {
       display: none !important;
@@ -95,31 +155,86 @@
 </head>
 
 <body>
-  <main>
-  <!-- 🏛 主畫面 -->
-  <div class="responsive-wrapper">
-    <div class="content">
-      <textarea id="complaint" class="input-box" placeholder="請輸入你的戀愛控訴..."></textarea>
-      <button id="submit-btn" class="submit-btn">審判！</button>
-    </div>
-  </div>
+  <main class="stage-screen">
+    <div class="background-layer"></div>
 
+    <button id="gavel-btn" class="gavel-hitbox" aria-label="提交審判"></button>
+
+    <!-- 🏛 主畫面 -->
+    <div class="responsive-wrapper">
+      <div class="content">
+        <label for="accused" class="field-label">控訴對象（選填）</label>
+        <input type="text" id="accused" class="input-single" placeholder="可留空；有對象再填暱稱即可" />
+
+        <label for="complaint" class="field-label">戀愛心事（必填，不限抱怨）</label>
+        <textarea id="complaint" class="input-box" placeholder="說說你的戀愛心事、糾結或想被聽見的心情…"></textarea>
+
+        <button id="submit-btn" class="submit-btn hidden-submit">審判！</button>
+      </div>
+    </div>
+ 
 <!-- ⚖️ 判決畫面 -->
 <div id="verdict-screen" class="verdict-popup hidden">
   <div id="verdict-capture">
    <div id="loading-animation" class="loading hidden">⚖️ 正在審判中...</div>
    <div id="verdict-text" class="hidden">
-     <p class="verdict-title">🧑‍⚖️ 戀愛判決書</p>
+     <p class="verdict-title">戀愛判決書</p>
+     <p class="verdict-psych"></p>
      <p class="verdict-crime"></p>
      <p class="verdict-suggestion"></p>
      <p class="verdict-judgement"></p>
+
+     <div id="recommended-music" class="recommended-music hidden">
+       <p class="recommended-music-text">現在的心情適合聆聽...</p>
+       <a
+         id="recommended-music-link"
+         class="recommended-music-link"
+         href="https://linktr.ee/Yutin_Huang"
+         target="_blank"
+         rel="noopener noreferrer"
+       >
+         <img id="recommended-music-cover" class="recommended-music-cover" alt="歌曲封面" />
+         <p id="recommended-music-title" class="recommended-music-title"></p>
+       </a>
+       <audio id="recommended-music-audio" preload="auto"></audio>
+     </div>
   
 
     <!-- ✅ 新增按鈕區塊 -->
      <div class="verdict-buttons">
        <button id="retry-btn" class="retry-btn hidden">再上訴！</button>
+       <button id="mediation-apply-btn" class="mediation-apply-btn hidden">申請調停</button>
        <a href="https://linktr.ee/Yutin_Huang" target="_blank" class="listen-btn">前往收聽</a>
      </div>
+
+     <div id="mediation-link-container" class="mediation-link-container hidden"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ⚖️ 調停畫面（token 進入） -->
+<div id="mediation-screen" class="mediation-screen hidden">
+  <div id="mediation-container">
+    <div id="mediation-loading" class="loading hidden">⚖️ 正在產生和解書...</div>
+    <div id="mediation-content" class="hidden">
+      <p class="verdict-title">戀愛調停 / 和解書</p>
+      <p id="mediation-status" class="verdict-psych"></p>
+
+      <div id="mediation-section-created" class="hidden">
+        <p class="verdict-suggestion">給對方看的「柔和控訴版本」</p>
+        <div id="mediation-softened-story" class="mediation-story"></div>
+
+        <label for="mediation-response" class="mediation-label">你的答辯（對方回覆）</label>
+        <textarea id="mediation-response" class="input-box" placeholder="把對方的回覆貼上來..."></textarea>
+        <button id="mediation-respond-btn" class="mediation-respond-btn">生成戀愛和解書</button>
+      </div>
+
+      <div id="mediation-section-responded" class="hidden">
+        <p class="verdict-suggestion">戀愛和解書</p>
+        <div id="mediation-settlement-text" class="mediation-settlement"></div>
+      </div>
+
+      <button id="mediation-back-btn" class="mediation-back-btn" type="button">回到首頁</button>
     </div>
   </div>
 </div>
@@ -129,9 +244,6 @@
     <audio id="sound-effect" preload="auto">
       <source src="gavel-sound.wav" type="audio/wav" />
     </audio>
-
-    <!-- 🎵 判決背景音樂 -->
-    <audio id="verdict-music" src="mysong.wav" loop></audio>
 
     <!-- 🔧 JavaScript -->
     <script src="script.js" defer></script>

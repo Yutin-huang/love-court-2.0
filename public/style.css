@@ -8,7 +8,7 @@ html, body {
   height: 100%;
   min-height: 100vh;
   font-family: 'Courier New', monospace;
-  overflow-y: auto;
+  overflow: hidden;
 }
 
 /* ✅ 背景圖設定（桌機／手機共用） */
@@ -16,8 +16,8 @@ html, body {
   position: relative;
   width: 100vw;
   height: 100vh;
-  background-image: url('bg6.JPG');
-  background-size: contain;
+  background-image: url('/images/lovecourt-bg.png');
+  background-size: cover;
   background-repeat: no-repeat;
   background-position: center;
   background-color: #ffe6f0;
@@ -25,15 +25,15 @@ html, body {
 }
 @media (max-width: 480px) {
   .responsive-wrapper {
-    background-image: url('mobile6.jpg');
-    background-size: contain;
+    background-image: url('/images/lovecourt-bg.png');
+    background-size: cover;
   }
 }
 
 /* ✅ 控訴區塊（輸入框 + 按鈕） */
 .content {
   position: absolute;
-  bottom: 8vh;
+  bottom: 6vh;
   left: 0;
   width: 100%;
   padding: 0 6vw;
@@ -46,6 +46,7 @@ html, body {
 @media (max-width: 480px) {
   .content {
     padding: 4vh 6vw;
+    bottom: 3vh;
   }
 }
 
@@ -123,6 +124,13 @@ html, body {
   color: #ff66cc;
   margin-bottom: 12px;
 }
+.verdict-psych {
+  font-family: 'Noto Sans TC', '微軟正黑體', sans-serif;
+  font-size: 13px;
+  color: #9c27b0;
+  margin-bottom: 10px;
+  line-height: 1.5;
+}
 .verdict-crime {
   font-family: 'Noto Sans TC', '微軟正黑體', sans-serif;
   font-size: 14px;
@@ -141,45 +149,108 @@ html, body {
   line-height: 1.8;
 }
 
-/* ✅ 再上訴按鈕 */
-.retry-btn {
-  margin-top: 20px;
-  padding: 10px 20px;
-  font-family: 'Press Start 2P', cursive;
-  background-color: #ff69b4;
-  color: white;
-  border: none;
-  font-size: 10px;
-  cursor: pointer;
-  display: block;
-  margin-left: auto;
-  margin-right: auto;
+.recommended-music {
+  margin-top: 10px;
+  text-align: center;
+  width: 100%;
+}
+
+.recommended-music-text {
+  font-family: 'Noto Sans TC', '微軟正黑體', sans-serif;
+  font-size: 12px;
+  color: #274567;
+  font-weight: 700;
+  margin: 0 0 6px 0;
+}
+
+.recommended-music-cover {
+  width: 110px;
+  height: 110px;
+  object-fit: cover;
+  border-radius: 16px;
+  border: 4px solid rgba(111, 144, 224, 0.55);
+  box-shadow: 0 12px 24px rgba(63, 118, 186, 0.18);
+  background-color: rgba(255, 255, 255, 0.5);
+}
+
+.recommended-music-link {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  text-decoration: none;
+}
+
+.recommended-music-title {
+  margin-top: 8px;
+  font-family: 'Noto Sans TC', '微軟正黑體', sans-serif;
+  font-size: 12px;
+  color: #9c27b0;
+  text-decoration: underline;
+}
+
+#recommended-music-audio {
+  display: none;
 }
 
 .verdict-buttons {
   display: flex;
   justify-content: center;
-  gap: 12px;
-  margin-top: 20px;
-}
-/* ✅ 前往收聽按鈕 */
-.listen-btn {
-  margin-top: 20px;
-  padding: 10px 20px;
-  font-family: 'Press Start 2P', cursive;
-  background-color: #ff69b4;
-  color: white;
-  border: none;
-  font-size: 10px;
-  cursor: pointer;
-  display: block;
-  margin-left: auto;
-  margin-right: auto;
+  gap: 10px;
+  margin-top: 16px;
+  flex-wrap: nowrap;
 }
 
-.listen-btn:hover {
-  background-color: #ffe6f0;
-  border-color: #ff99cc;
+/* ✅ 判決畫面按鍵（參考遊戲 Menu 風格） */
+.retry-btn,
+.listen-btn,
+.mediation-apply-btn {
+  width: 142px;
+  height: 64px;
+  padding: 0;
+  font-family: 'Press Start 2P', cursive;
+  font-size: 9px;
+  line-height: 1.35;
+  text-align: center;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0;
+  border: none;
+  background-color: transparent;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 100% 100%;
+  color: #2f4f78;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.75);
+  box-shadow: none;
+  cursor: pointer;
+  text-decoration: none;
+  transition: transform 0.12s ease, filter 0.12s ease;
+}
+
+.retry-btn {
+  background-image: url('/images/b1.png');
+}
+
+.mediation-apply-btn {
+  background-image: url('/images/b2.png');
+}
+
+.listen-btn {
+  background-image: url('/images/b3.png');
+}
+
+.retry-btn:hover,
+.listen-btn:hover,
+.mediation-apply-btn:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.03);
+}
+
+.retry-btn:active,
+.listen-btn:active,
+.mediation-apply-btn:active {
+  transform: translateY(2px);
 }
 
 
@@ -212,4 +283,107 @@ html, body {
 #audio-player,
 #sound-effect {
   display: none;
+}
+
+/* ✅ 調停畫面 */
+#mediation-screen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 40px 20px;
+  background-color: rgba(255, 240, 250, 0.7);
+  overflow-y: auto;
+}
+
+#mediation-container {
+  width: 100%;
+  max-width: 520px;
+}
+
+.mediation-link-container {
+  margin-top: 14px;
+  font-family: 'Noto Sans TC', '微軟正黑體', sans-serif;
+  color: #c2185b;
+  text-align: center;
+  font-size: 14px;
+}
+
+.mediation-link-container a {
+  color: #ff1493;
+  text-decoration: underline;
+  word-break: break-all;
+}
+
+.mediation-respond-btn {
+  margin-top: 14px;
+  width: 100%;
+  padding: 12px 16px;
+  font-family: 'Press Start 2P', cursive;
+  background-color: #ff69b4;
+  border: 3px solid #ff69b4;
+  border-radius: 8px;
+  color: white;
+  box-shadow: 2px 2px #ff69b4;
+  cursor: pointer;
+  font-size: 10px;
+}
+
+.mediation-back-btn {
+  margin-top: 20px;
+  width: 100%;
+  padding: 10px 16px;
+  font-family: 'Press Start 2P', cursive;
+  background-color: #ffc0cb;
+  border: 3px solid #ff69b4;
+  border-radius: 8px;
+  color: white;
+  box-shadow: 2px 2px #ff69b4;
+  cursor: pointer;
+  font-size: 10px;
+}
+
+.mediation-story {
+  margin-top: 10px;
+  width: 100%;
+  background-color: rgba(255, 255, 255, 0.75);
+  border-radius: 12px;
+  padding: 14px 14px;
+  font-family: 'Noto Sans TC', '微軟正黑體', sans-serif;
+  color: #333;
+  white-space: pre-wrap;
+  line-height: 1.8;
+  font-size: 14px;
+  border: 3px solid rgba(255, 128, 170, 0.35);
+  box-shadow: 2px 2px rgba(255, 170, 204, 0.5);
+}
+
+.mediation-settlement {
+  margin-top: 10px;
+  width: 100%;
+  background-color: rgba(255, 255, 255, 0.75);
+  border-radius: 12px;
+  padding: 14px 14px;
+  font-family: 'Noto Sans TC', '微軟正黑體', sans-serif;
+  color: #333;
+  white-space: pre-wrap;
+  line-height: 1.8;
+  font-size: 14px;
+  border: 3px solid rgba(255, 128, 170, 0.35);
+  box-shadow: 2px 2px rgba(255, 170, 204, 0.5);
+}
+
+.mediation-label {
+  display: block;
+  margin-top: 14px;
+  font-family: 'Noto Sans TC', '微軟正黑體', sans-serif;
+  color: #c2185b;
+  font-size: 14px;
+  margin-bottom: 6px;
 }
