@@ -44,7 +44,7 @@
 
     @media (max-width: 480px) {
       .responsive-wrapper {
-        background-image: url('/images/手機直式.png');
+        background-image: url('/images/手機2.png');
         background-size: cover;
         background-position: center;
         background-repeat: no-repeat;
@@ -178,6 +178,7 @@
   <div id="verdict-capture">
    <div id="loading-animation" class="loading hidden">⚖️ 正在審判中...</div>
    <div id="verdict-text" class="hidden">
+     <div class="verdict-text-inner">
      <p class="verdict-title">戀愛判決書</p>
      <p class="verdict-psych"></p>
      <p class="verdict-crime"></p>
@@ -208,6 +209,56 @@
      </div>
 
      <div id="mediation-link-container" class="mediation-link-container hidden"></div>
+     </div>
+    </div>
+    <div class="verdict-export-bar">
+      <button
+        type="button"
+        id="verdict-export-btn"
+        class="verdict-export-btn hidden"
+        aria-label="下載判決結果"
+        title="下載判決結果"
+      >
+        ⬇
+      </button>
+      <button
+        type="button"
+        id="verdict-share-btn"
+        class="verdict-share-btn hidden"
+        aria-label="分享判決"
+        title="分享"
+      >
+        ↗
+      </button>
+    </div>
+  </div>
+
+  <div
+    id="verdict-share-modal"
+    class="verdict-share-modal hidden"
+    aria-hidden="true"
+  >
+    <div class="verdict-share-backdrop" aria-hidden="true"></div>
+    <div class="verdict-share-panel" role="dialog" aria-labelledby="verdict-share-title">
+      <p id="verdict-share-title" class="verdict-share-title">分享判決</p>
+      <p class="verdict-share-hint">
+        部分 App 需先下載圖片再貼上；連結為本頁網址。
+      </p>
+      <div class="verdict-share-actions">
+        <button type="button" class="verdict-share-option" data-share-target="fb-feed">
+          Facebook 動態
+        </button>
+        <button type="button" class="verdict-share-option" data-share-target="ig-story">
+          Instagram 限時動態
+        </button>
+        <button type="button" class="verdict-share-option" data-share-target="fb-messenger">
+          Facebook Messenger
+        </button>
+        <button type="button" class="verdict-share-option" data-share-target="ig-dm">
+          Instagram 訊息
+        </button>
+      </div>
+      <button type="button" class="verdict-share-cancel">取消</button>
     </div>
   </div>
 </div>
@@ -245,6 +296,10 @@
       <source src="gavel-sound.wav" type="audio/wav" />
     </audio>
 
+    <script
+      src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"
+      defer
+    ></script>
     <!-- 🔧 JavaScript -->
     <script src="script.js" defer></script>
   </main>

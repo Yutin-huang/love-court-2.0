@@ -45,6 +45,9 @@ const mediationSectionRespondedEl = document.getElementById(
   "mediation-section-responded"
 );
 const mediationBackBtn = document.getElementById("mediation-back-btn");
+const verdictExportBtn = document.getElementById("verdict-export-btn");
+const verdictShareBtn = document.getElementById("verdict-share-btn");
+const verdictShareModal = document.getElementById("verdict-share-modal");
 
 let currentVerdictId = null;
 let currentMediationToken = null;
@@ -102,6 +105,188 @@ function enableManualMusicPlayFallback(audioUrl) {
     },
     { once: true }
   );
+}
+
+function scrollMediationLinkIntoView() {
+  if (!mediationLinkContainer) return;
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      mediationLinkContainer.scrollIntoView({
+        behavior: "smooth",
+        block: "nearest",
+      });
+    });
+  });
+}
+
+/** Instagram 限時動態建議 1080×1920（9:16） */
+const IG_STORY_W = 1080;
+const IG_STORY_H = 1920;
+
+/**
+ * 輸出 9:16：等比例縮放（文字不變形），以「置中裁切」填滿畫面（類似 object-fit: cover）。
+ */
+/** 9:16 畫布：漸層底 + 判決截圖等比例置中（不變形），四周留白 */
+function composeVerdictForInstagramStory(verdictCanvas) {
+  const out = document.createElement("canvas");
+  out.width = IG_STORY_W;
+  out.height = IG_STORY_H;
+  const ctx = out.getContext("2d");
+  if (!ctx) return verdictCanvas;
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = "high";
+
+  const g = ctx.createLinearGradient(0, 0, 0, IG_STORY_H);
+  g.addColorStop(0, "#ffe8f4");
+  g.addColorStop(0.45, "#fff8fc");
+  g.addColorStop(1, "#e6ecff");
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, IG_STORY_W, IG_STORY_H);
+
+  const maxW = IG_STORY_W * 0.9;
+  const maxH = IG_STORY_H * 0.76;
+  const w = verdictCanvas.width;
+  const h = verdictCanvas.height;
+  const scale = Math.min(maxW / w, maxH / h);
+  const dw = w * scale;
+  const dh = h * scale;
+  const x = (IG_STORY_W - dw) / 2;
+  const y = (IG_STORY_H - dh) / 2;
+
+  ctx.save();
+  ctx.shadowColor = "rgba(50, 65, 120, 0.22)";
+  ctx.shadowBlur = 28;
+  ctx.shadowOffsetY = 10;
+  ctx.drawImage(verdictCanvas, x, y, dw, dh);
+  ctx.restore();
+
+  return out;
+}
+
+async function captureVerdictPngBlob() {
+  const captureTarget = document.getElementById("verdict-text");
+  if (!captureTarget || captureTarget.classList.contains("hidden")) return null;
+  if (typeof window.html2canvas !== "function") {
+    console.error("html2canvas 尚未載入");
+    return null;
+  }
+
+  const filename = `戀愛判決書-${new Date().toISOString().slice(0, 10)}-限時9x16.png`;
+  try {
+    if (document.fonts?.ready) {
+      await document.fonts.ready;
+    }
+    const rawCanvas = await window.html2canvas(captureTarget, {
+      scale: Math.max(2, window.devicePixelRatio || 1),
+      backgroundColor: null,
+      useCORS: true,
+      onclone(clonedDoc) {
+        const root = clonedDoc.getElementById("verdict-text");
+        const btnRow = root?.querySelector(".verdict-buttons");
+        if (btnRow) btnRow.style.display = "none";
+      },
+    });
+    const storyCanvas = composeVerdictForInstagramStory(rawCanvas);
+    const blob = await new Promise((resolve) =>
+      storyCanvas.toBlob(resolve, "image/png", 1)
+    );
+    if (!blob) return null;
+    return { blob, filename };
+  } catch (err) {
+    console.error("判決書截圖失敗", err);
+    return null;
+  }
+}
+
+async function exportVerdictDownload() {
+  const result = await captureVerdictPngBlob();
+  if (!result) return;
+  const { blob, filename } = result;
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.rel = "noopener";
+  a.style.display = "none";
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => {
+    a.remove();
+    URL.revokeObjectURL(url);
+  }, 200);
+}
+
+function getSharePageUrl() {
+  return window.location.href.split("#")[0];
+}
+
+function openFacebookFeedShare() {
+  const u = encodeURIComponent(getSharePageUrl());
+  window.open(
+    `https://www.facebook.com/sharer/sharer.php?u=${u}`,
+    "_blank",
+    "noopener,noreferrer"
+  );
+}
+
+async function shareToInstagramStory() {
+  const result = await captureVerdictPngBlob();
+  if (!result) return;
+  const { blob, filename } = result;
+  const file = new File([blob], filename, { type: "image/png" });
+  try {
+    if (navigator.share && navigator.canShare?.({ files: [file] })) {
+      await navigator.share({
+        files: [file],
+        title: "戀愛判決書",
+        text: "LoveCourt 戀愛判決書",
+      });
+      return;
+    }
+  } catch (e) {
+    if (e.name === "AbortError") return;
+  }
+  window.alert(
+    "此裝置無法直接帶圖到限時。請先用「下載」儲存圖片，再開啟 Instagram 發限時動態。"
+  );
+}
+
+function openFacebookMessengerShare() {
+  const link = encodeURIComponent(getSharePageUrl());
+  const ua = navigator.userAgent || "";
+  if (/iPhone|iPad|iPod|Android/i.test(ua)) {
+    window.location.href = `fb-messenger://share?link=${link}`;
+  } else {
+    window.open("https://www.messenger.com/", "_blank", "noopener,noreferrer");
+  }
+}
+
+function openInstagramDirectInbox() {
+  const ua = navigator.userAgent || "";
+  if (/iPhone|iPad|iPod/i.test(ua)) {
+    window.location.href = "instagram://direct-inbox";
+  } else if (/Android/i.test(ua)) {
+    window.location.href =
+      "intent://instagram.com/direct/inbox/#Intent;scheme=https;package=com.instagram.android;end";
+  } else {
+    window.open(
+      "https://www.instagram.com/direct/inbox/",
+      "_blank",
+      "noopener,noreferrer"
+    );
+  }
+}
+
+function verdictShareModalOpen() {
+  if (!verdictShareModal) return;
+  verdictShareModal.classList.remove("hidden");
+  verdictShareModal.setAttribute("aria-hidden", "false");
+}
+
+function verdictShareModalClose() {
+  if (!verdictShareModal) return;
+  verdictShareModal.classList.add("hidden");
+  verdictShareModal.setAttribute("aria-hidden", "true");
 }
 
 function getSmartPlatformCandidates(queryText) {
@@ -239,6 +424,7 @@ async function createMediation() {
       if (mediationLinkContainer) {
         mediationLinkContainer.textContent = data.error || "建立調停失敗";
         show(mediationLinkContainer);
+        scrollMediationLinkIntoView();
       }
       return;
     }
@@ -250,12 +436,14 @@ async function createMediation() {
         <a href="${linkText}" target="_blank" rel="noopener noreferrer">${linkText}</a>
       `;
       show(mediationLinkContainer);
+      scrollMediationLinkIntoView();
     }
   } catch (err) {
     console.error("Mediation create error:", err);
     if (mediationLinkContainer) {
       mediationLinkContainer.textContent = "建立調停失敗（系統錯誤）";
       show(mediationLinkContainer);
+      scrollMediationLinkIntoView();
     }
   } finally {
     if (mediationApplyBtn) {
@@ -372,6 +560,9 @@ retryBtn.addEventListener("click", () => {
 
   currentVerdictId = null;
   if (mediationApplyBtn) mediationApplyBtn.classList.add("hidden");
+  if (verdictExportBtn) verdictExportBtn.classList.add("hidden");
+  if (verdictShareBtn) verdictShareBtn.classList.add("hidden");
+  verdictShareModalClose();
   if (mediationLinkContainer) {
     mediationLinkContainer.classList.add("hidden");
     mediationLinkContainer.textContent = "";
@@ -392,6 +583,47 @@ if (mediationRespondBtn) {
 if (mediationBackBtn) {
   mediationBackBtn.addEventListener("click", () => {
     window.location.href = "/";
+  });
+}
+
+if (verdictExportBtn) {
+  verdictExportBtn.addEventListener("click", () => {
+    exportVerdictDownload();
+  });
+}
+
+if (verdictShareBtn) {
+  verdictShareBtn.addEventListener("click", () => {
+    verdictShareModalOpen();
+  });
+}
+
+if (verdictShareModal) {
+  const shareBackdrop = verdictShareModal.querySelector(".verdict-share-backdrop");
+  const shareCancel = verdictShareModal.querySelector(".verdict-share-cancel");
+  shareBackdrop?.addEventListener("click", () => verdictShareModalClose());
+  shareCancel?.addEventListener("click", () => verdictShareModalClose());
+  verdictShareModal.querySelectorAll(".verdict-share-option").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      const target = btn.dataset.shareTarget;
+      verdictShareModalClose();
+      switch (target) {
+        case "fb-feed":
+          openFacebookFeedShare();
+          break;
+        case "ig-story":
+          await shareToInstagramStory();
+          break;
+        case "fb-messenger":
+          openFacebookMessengerShare();
+          break;
+        case "ig-dm":
+          openInstagramDirectInbox();
+          break;
+        default:
+          break;
+      }
+    });
   });
 }
 
@@ -421,6 +653,9 @@ submitBtn.addEventListener("click", async () => {
 
   currentVerdictId = null;
   if (mediationApplyBtn) hide(mediationApplyBtn);
+  if (verdictExportBtn) hide(verdictExportBtn);
+  if (verdictShareBtn) hide(verdictShareBtn);
+  verdictShareModalClose();
   if (mediationLinkContainer) {
     hide(mediationLinkContainer);
     mediationLinkContainer.textContent = "";
@@ -448,8 +683,8 @@ submitBtn.addEventListener("click", async () => {
     soundEffect.currentTime = 0;
   }, 4000);
 
-  // ✅ 顯示判決內容（呼叫 GPT）
-  setTimeout(async () => {
+  // ✅ 顯示判決內容（呼叫 GPT，不延遲；推播曲與判決同步出現）
+  (async () => {
     try {
       const response = await fetch("/api/verdict", {
         method: "POST",
@@ -470,6 +705,8 @@ submitBtn.addEventListener("click", async () => {
         judgementEl.textContent = "";
         retryBtn.classList.remove("hidden");
         if (recommendedMusicEl) recommendedMusicEl.classList.add("hidden");
+        if (verdictExportBtn) hide(verdictExportBtn);
+        if (verdictShareBtn) hide(verdictShareBtn);
         return;
       }
 
@@ -506,7 +743,7 @@ submitBtn.addEventListener("click", async () => {
         recommendedAudioEl.pause();
         recommendedAudioEl.currentTime = 0;
       }
-  currentRecommendedMusic = null;
+      currentRecommendedMusic = null;
       if (data.recommendedMusic && typeof data.recommendedMusic === "object") {
         const { coverUrl, songTitle, audioUrl, listenUrl, spotifyUrl } =
           data.recommendedMusic;
@@ -543,6 +780,8 @@ submitBtn.addEventListener("click", async () => {
       }
 
       retryBtn.classList.remove("hidden");
+      if (verdictExportBtn) show(verdictExportBtn);
+      if (verdictShareBtn) show(verdictShareBtn);
     } catch (err) {
       console.error("❌ 發送錯誤：", err);
       loadingAnimation.classList.add("hidden");
@@ -553,8 +792,10 @@ submitBtn.addEventListener("click", async () => {
       judgementEl.textContent = "";
       if (recommendedMusicEl) recommendedMusicEl.classList.add("hidden");
       retryBtn.classList.remove("hidden");
+      if (verdictExportBtn) hide(verdictExportBtn);
+      if (verdictShareBtn) hide(verdictShareBtn);
     }
-  }, 2000); // 控制顯示時間
+  })();
 });
 
 
