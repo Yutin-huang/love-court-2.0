@@ -25,7 +25,7 @@ html, body {
 }
 @media (max-width: 480px) {
   .responsive-wrapper {
-    background-image: url('/images/lovecourt-bg.png');
+    background-image: url('/images/手機直式.png');
     background-size: cover;
   }
 }

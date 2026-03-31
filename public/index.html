@@ -44,7 +44,7 @@
 
     @media (max-width: 480px) {
       .responsive-wrapper {
-        background-image: url('/images/lovecourt-bg.png');
+        background-image: url('/images/手機直式.png');
         background-size: cover;
         background-position: center;
         background-repeat: no-repeat;
@@ -196,7 +196,7 @@
          <img id="recommended-music-cover" class="recommended-music-cover" alt="歌曲封面" />
          <p id="recommended-music-title" class="recommended-music-title"></p>
        </a>
-       <audio id="recommended-music-audio" preload="auto"></audio>
+      <audio id="recommended-music-audio" preload="auto" playsinline webkit-playsinline></audio>
      </div>
   
 
@@ -241,7 +241,7 @@
 
 
     <!-- 🔊 音效 -->
-    <audio id="sound-effect" preload="auto">
+    <audio id="sound-effect" preload="auto" playsinline webkit-playsinline>
       <source src="gavel-sound.wav" type="audio/wav" />
     </audio>
 

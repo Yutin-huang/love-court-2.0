@@ -49,6 +49,7 @@ const mediationBackBtn = document.getElementById("mediation-back-btn");
 let currentVerdictId = null;
 let currentMediationToken = null;
 let currentRecommendedMusic = null;
+let isAudioPrimed = false;
 
 function show(el) {
   if (!el) return;
@@ -63,6 +64,45 @@ function hide(el) {
 function firstLineIncluding(verdict, keywords) {
   const lines = verdict.trim().split("\n");
   return lines.find((line) => keywords.some((k) => line.includes(k))) || "";
+}
+
+/**
+ * Mobile autoplay policy workaround:
+ * prime recommended audio in user gesture (submit click).
+ */
+async function primeRecommendedAudioForMobile() {
+  if (isAudioPrimed || !recommendedAudioEl) return;
+  try {
+    const unlockSrc = soundEffect?.currentSrc || "/gavel-sound.wav";
+    recommendedAudioEl.src = unlockSrc;
+    recommendedAudioEl.muted = true;
+    recommendedAudioEl.playsInline = true;
+    await recommendedAudioEl.play();
+    recommendedAudioEl.pause();
+    recommendedAudioEl.currentTime = 0;
+    recommendedAudioEl.removeAttribute("src");
+    recommendedAudioEl.load();
+    recommendedAudioEl.muted = false;
+    isAudioPrimed = true;
+  } catch (err) {
+    // Ignore prime failure; manual tap fallback is handled later.
+    console.log("⚠️ 音訊預解鎖失敗", err);
+  }
+}
+
+function enableManualMusicPlayFallback(audioUrl) {
+  if (!recommendedMusicEl || !recommendedAudioEl || !audioUrl) return;
+  recommendedMusicEl.addEventListener(
+    "click",
+    () => {
+      recommendedAudioEl.src = audioUrl;
+      recommendedAudioEl.muted = false;
+      recommendedAudioEl.volume = 0.8;
+      recommendedAudioEl.loop = true;
+      recommendedAudioEl.play().catch(() => {});
+    },
+    { once: true }
+  );
 }
 
 function getSmartPlatformCandidates(queryText) {
@@ -378,6 +418,7 @@ submitBtn.addEventListener("click", async () => {
   const story = complaintInput.value.trim();
   if (!story) return;
   const accused = accusedInput ? accusedInput.value.trim() : "";
+  primeRecommendedAudioForMobile();
 
   currentVerdictId = null;
   if (mediationApplyBtn) hide(mediationApplyBtn);
@@ -484,12 +525,15 @@ submitBtn.addEventListener("click", async () => {
             recommendedAudioEl.src = audioUrl;
             recommendedAudioEl.volume = 0.8;
             recommendedAudioEl.loop = true;
+            recommendedAudioEl.playsInline = true;
             recommendedAudioEl.play().catch((err) => {
               console.log("⚠️ 推播歌曲播放失敗", err);
+              enableManualMusicPlayFallback(audioUrl);
             });
           }
         } catch (err) {
           console.log("⚠️ 推播歌曲播放錯誤", err);
+          enableManualMusicPlayFallback(audioUrl);
         }
       }
 
