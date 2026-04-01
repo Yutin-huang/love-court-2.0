@@ -309,10 +309,6 @@ html, body {
   transition: transform 0.12s ease, filter 0.12s ease;
 }
 
-.verdict-share-btn {
-  font-size: 18px;
-}
-
 .verdict-export-btn:hover,
 .verdict-share-btn:hover {
   transform: translateY(-1px);
@@ -326,103 +322,6 @@ html, body {
 }
 
 /* 判決分享選單 */
-.verdict-share-modal {
-  position: fixed;
-  inset: 0;
-  z-index: 10050;
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
-  padding: 16px;
-  padding-bottom: max(16px, env(safe-area-inset-bottom));
-}
-
-.verdict-share-modal.hidden {
-  display: none !important;
-}
-
-.verdict-share-backdrop {
-  position: absolute;
-  inset: 0;
-  background: rgba(30, 40, 55, 0.45);
-  cursor: pointer;
-}
-
-.verdict-share-panel {
-  position: relative;
-  z-index: 1;
-  width: 100%;
-  max-width: 380px;
-  max-height: min(85vh, 520px);
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-  touch-action: pan-y;
-  border-radius: 18px;
-  padding: 18px 16px 14px;
-  background: rgba(255, 252, 254, 0.98);
-  border: 2px solid rgba(158, 181, 231, 0.85);
-  box-shadow: 0 16px 40px rgba(80, 100, 150, 0.25);
-}
-
-.verdict-share-title {
-  margin: 0 0 8px;
-  font-family: 'Noto Serif TC', serif;
-  font-size: 17px;
-  font-weight: 700;
-  color: #c2185b;
-  text-align: center;
-}
-
-.verdict-share-hint {
-  margin: 0 0 14px;
-  font-family: 'Noto Sans TC', sans-serif;
-  font-size: 12px;
-  line-height: 1.5;
-  color: #5c6b8a;
-  text-align: center;
-}
-
-.verdict-share-actions {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.verdict-share-option {
-  width: 100%;
-  padding: 12px 14px;
-  font-family: 'Noto Sans TC', sans-serif;
-  font-size: 15px;
-  font-weight: 700;
-  color: #2f4f78;
-  border-radius: 12px;
-  border: 2px solid rgba(111, 144, 224, 0.55);
-  background: linear-gradient(
-    180deg,
-    rgba(255, 255, 255, 0.98) 0%,
-    rgba(236, 244, 255, 0.95) 100%
-  );
-  cursor: pointer;
-  transition: transform 0.1s ease, filter 0.1s ease;
-}
-
-.verdict-share-option:active {
-  transform: scale(0.99);
-  filter: brightness(0.98);
-}
-
-.verdict-share-cancel {
-  margin-top: 12px;
-  width: 100%;
-  padding: 10px;
-  font-family: 'Noto Sans TC', sans-serif;
-  font-size: 14px;
-  color: #6b7a99;
-  background: transparent;
-  border: none;
-  cursor: pointer;
-}
-
 .retry-btn:hover,
 .listen-btn:hover,
 .mediation-apply-btn:hover {
@@ -568,6 +467,20 @@ html, body {
   font-size: 10px;
 }
 
+.mediation-export-btn {
+  margin-top: 12px;
+  width: 100%;
+  padding: 10px 16px;
+  font-family: 'Press Start 2P', cursive;
+  background-color: #9eb5e7;
+  border: 3px solid #7d96cc;
+  border-radius: 8px;
+  color: white;
+  box-shadow: 2px 2px #7d96cc;
+  cursor: pointer;
+  font-size: 10px;
+}
+
 .mediation-back-btn {
   margin-top: 20px;
   margin-bottom: 12px;
@@ -601,6 +514,8 @@ html, body {
 /* 案件摘要（與下方和解書區塊同寬） */
 .mediation-settlement-head {
   width: 100%;
+  max-width: 90%;
+  margin: 0 auto;
 }
 
 .mediation-case-summary-wrap {
@@ -620,8 +535,9 @@ html, body {
 .mediation-case-summary {
   margin: 0;
   width: 100%;
+  max-width: 100%;
   box-sizing: border-box;
-  padding: 14px 14px;
+  padding: 10px 12px;
   background-color: rgba(255, 255, 255, 0.75);
   border-radius: 12px;
   border: 3px solid rgba(255, 128, 170, 0.35);
@@ -637,10 +553,13 @@ html, body {
 .mediation-settlement {
   margin-top: 0;
   width: 100%;
+  max-width: 90%;
+  margin-left: auto;
+  margin-right: auto;
   box-sizing: border-box;
   background-color: rgba(255, 255, 255, 0.75);
   border-radius: 12px;
-  padding: 14px 14px;
+  padding: 10px 12px;
   font-family: 'Noto Sans TC', '微軟正黑體', sans-serif;
   color: #333;
   text-align: left;
@@ -652,6 +571,12 @@ html, body {
 
 .mediation-settlement .settlement-p {
   margin: 0 0 12px 0;
+}
+
+#mediation-section-responded .mediation-recommended-music {
+  width: 90%;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .mediation-settlement .settlement-p--lead,

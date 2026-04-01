@@ -234,44 +234,6 @@
       >
         ⬇
       </button>
-      <button
-        type="button"
-        id="verdict-share-btn"
-        class="verdict-share-btn hidden"
-        aria-label="分享判決"
-        title="分享"
-      >
-        ↗
-      </button>
-    </div>
-  </div>
-
-  <div
-    id="verdict-share-modal"
-    class="verdict-share-modal hidden"
-    aria-hidden="true"
-  >
-    <div class="verdict-share-backdrop" aria-hidden="true"></div>
-    <div class="verdict-share-panel" role="dialog" aria-labelledby="verdict-share-title">
-      <p id="verdict-share-title" class="verdict-share-title">分享判決</p>
-      <p class="verdict-share-hint">
-        部分 App 需先下載圖片再貼上；連結為本頁網址。
-      </p>
-      <div class="verdict-share-actions">
-        <button type="button" class="verdict-share-option" data-share-target="fb-feed">
-          Facebook 動態
-        </button>
-        <button type="button" class="verdict-share-option" data-share-target="ig-story">
-          Instagram 限時動態
-        </button>
-        <button type="button" class="verdict-share-option" data-share-target="fb-messenger">
-          Facebook Messenger
-        </button>
-        <button type="button" class="verdict-share-option" data-share-target="ig-dm">
-          Instagram 訊息
-        </button>
-      </div>
-      <button type="button" class="verdict-share-cancel">取消</button>
     </div>
   </div>
 </div>
@@ -330,6 +292,13 @@
           </div>
         </div>
         <div id="mediation-settlement-text" class="mediation-settlement"></div>
+        <button
+          id="mediation-export-btn"
+          class="mediation-export-btn"
+          type="button"
+        >
+          下載和解書
+        </button>
       </div>
 
       <button id="mediation-back-btn" class="mediation-back-btn" type="button">回到首頁</button>
@@ -341,9 +310,13 @@
 
     <!-- 🔊 音效 -->
     <audio id="home-bg-audio" preload="auto" playsinline webkit-playsinline></audio>
-    <audio id="sound-effect" preload="auto" playsinline webkit-playsinline>
-      <source src="/dream%202%20.wav" type="audio/wav" />
-    </audio>
+    <audio
+      id="sound-effect"
+      src="/gavel-sound.wav"
+      preload="auto"
+      playsinline
+      webkit-playsinline
+    ></audio>
 
     <script
       src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"

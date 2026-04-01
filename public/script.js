@@ -67,6 +67,7 @@ const mediationRecommendedMusicLinkEl = document.getElementById(
 const mediationRecommendedAudioEl = document.getElementById(
   "mediation-recommended-music-audio"
 );
+const mediationExportBtn = document.getElementById("mediation-export-btn");
 const verdictExportBtn = document.getElementById("verdict-export-btn");
 const verdictShareBtn = document.getElementById("verdict-share-btn");
 const verdictShareModal = document.getElementById("verdict-share-modal");
@@ -83,7 +84,12 @@ let homeBgTrackUrl = "";
 let homeBgUnlocked = false;
 
 const HOME_BG_TRACKS = ["/dream%201.wav", "/sin%201.wav"];
-const TRIAL_SFX_TRACK = "/dream%202%20.wav";
+const TRIAL_SFX_TRACK = "/gavel-sound.wav";
+const TRIAL_SFX_MP3 = "/gavel-sound.mp3";
+const MEDIATION_EXPORT_BG = "/images/和解 2.png";
+/** 審判中法槌音效保留時間（約 3-4 秒） */
+const TRIAL_SFX_DURATION_MS = 3500;
+let lastTrialSubmitAt = 0;
 
 function show(el) {
   if (!el) return;
@@ -118,9 +124,22 @@ function warmCriticalAudio() {
   });
 
   if (soundEffect) {
-    const src = soundEffect?.currentSrc || soundEffect?.querySelector("source")?.src;
-    warmAudioElement(soundEffect, src || TRIAL_SFX_TRACK);
+    warmAudioElement(soundEffect, TRIAL_SFX_TRACK);
   }
+}
+
+function playTrialSoundEffect() {
+  if (!soundEffect) return;
+  soundEffect.muted = false;
+  soundEffect.src = TRIAL_SFX_TRACK;
+  soundEffect.load();
+  soundEffect.currentTime = 0;
+  soundEffect.play().catch(() => {
+    soundEffect.src = TRIAL_SFX_MP3;
+    soundEffect.load();
+    soundEffect.currentTime = 0;
+    soundEffect.play().catch(() => {});
+  });
 }
 
 function unlockHomeBackgroundAudio(audio) {
@@ -303,10 +322,12 @@ function setMediationSettlementContent(text) {
 async function primeRecommendedAudioForMobile() {
   if (isAudioPrimed) return;
   try {
-    const unlockSrc =
-      soundEffect?.currentSrc ||
-      soundEffect?.querySelector("source")?.src ||
-      TRIAL_SFX_TRACK;
+    // 審判音效固定用法槌檔（勿用 currentSrc，部分瀏覽器載入前為空會誤用其他音檔）
+    const unlockSrc = TRIAL_SFX_TRACK;
+    if (soundEffect) {
+      soundEffect.src = unlockSrc;
+      soundEffect.load();
+    }
 
     // 1) 先解鎖推薦歌曲實際播放用的 audio element（成功率較高）
     if (recommendedAudioEl) {
@@ -349,6 +370,67 @@ function enableManualMusicPlayFallback(audioUrl) {
     },
     { once: true }
   );
+}
+
+function attachVerdictAudioResumeOnFirstPointer(audioUrl) {
+  if (!verdictScreen || !recommendedAudioEl || !audioUrl) return;
+  verdictScreen.addEventListener(
+    "pointerdown",
+    () => {
+      const el = recommendedAudioEl;
+      if (!el.src) el.src = audioUrl;
+      el.muted = false;
+      el.volume = 0.8;
+      el.loop = true;
+      el.playsInline = true;
+      el.play().catch(() => {});
+    },
+    { once: true }
+  );
+}
+
+function startVerdictBackgroundAudio(audioUrl) {
+  const el = recommendedAudioEl;
+  if (!el || !audioUrl) return;
+
+  const onFail = () => {
+    enableManualMusicPlayFallback(audioUrl);
+    attachVerdictAudioResumeOnFirstPointer(audioUrl);
+  };
+
+  el.pause();
+  el.removeAttribute("src");
+  el.currentTime = 0;
+  el.muted = false;
+  el.volume = 0.8;
+  el.loop = true;
+  el.playsInline = true;
+  el.setAttribute("playsinline", "");
+  el.setAttribute("webkit-playsinline", "");
+
+  const onReady = () => {
+    el.play().catch((err) => {
+      console.log("⚠️ 推播歌曲播放失敗", err);
+      onFail();
+    });
+  };
+
+  el.addEventListener("canplay", onReady, { once: true });
+  el.addEventListener(
+    "error",
+    () => {
+      el.removeEventListener("canplay", onReady);
+      onFail();
+    },
+    { once: true }
+  );
+  el.src = audioUrl;
+  el.load();
+}
+
+function startVerdictBackgroundAudioAfterTrialSlot(audioUrl) {
+  if (!audioUrl) return;
+  startVerdictBackgroundAudio(audioUrl);
 }
 
 function enableManualMediationMusicPlayFallback(audioUrl) {
@@ -602,6 +684,120 @@ async function exportVerdictDownload() {
     window.setTimeout(() => {
       URL.revokeObjectURL(url);
     }, 60000);
+    window.alert("已開啟圖片預覽頁，請長按圖片即可儲存到相簿。");
+    return;
+  }
+
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.rel = "noopener";
+  a.style.display = "none";
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => {
+    a.remove();
+    URL.revokeObjectURL(url);
+  }, 200);
+}
+
+async function captureMediationPngBlob() {
+  const captureTarget = document.getElementById("mediation-section-responded");
+  if (!captureTarget || captureTarget.classList.contains("hidden")) return null;
+  if (typeof window.html2canvas !== "function") {
+    console.error("html2canvas 尚未載入");
+    return null;
+  }
+  const filename = `戀愛和解書-${new Date().toISOString().slice(0, 10)}.png`;
+  try {
+    if (document.fonts?.ready) {
+      await document.fonts.ready;
+    }
+    const canvas = await window.html2canvas(captureTarget, {
+      scale: Math.max(2, window.devicePixelRatio || 1),
+      backgroundColor: null,
+      useCORS: true,
+      onclone(clonedDoc) {
+        const btn = clonedDoc.getElementById("mediation-export-btn");
+        if (btn) btn.style.display = "none";
+      },
+    });
+    const finalCanvas = document.createElement("canvas");
+    // IG 限時動態比例：9:16（1080 x 1920）
+    finalCanvas.width = 1080;
+    finalCanvas.height = 1920;
+    const finalCtx = finalCanvas.getContext("2d");
+    if (!finalCtx) return null;
+
+    try {
+      const bgImg = new Image();
+      bgImg.crossOrigin = "anonymous";
+      const bgReady = new Promise((resolve, reject) => {
+        bgImg.onload = resolve;
+        bgImg.onerror = reject;
+      });
+      bgImg.src = MEDIATION_EXPORT_BG;
+      await bgReady;
+      finalCtx.drawImage(bgImg, 0, 0, finalCanvas.width, finalCanvas.height);
+    } catch (err) {
+      console.log("⚠️ 和解書背景載入失敗，改用原截圖底色", err);
+      finalCtx.fillStyle = "#f6e9f6";
+      finalCtx.fillRect(0, 0, finalCanvas.width, finalCanvas.height);
+    }
+
+    // 內容四邊再內縮，讓文字框完整落在背景設計安全區
+    // 內容寬度放大到畫面約 90%
+    const sidePadding = finalCanvas.width * 0.05;
+    const topPadding = 250;
+    const bottomPadding = 220;
+    const maxDrawWidth = finalCanvas.width - sidePadding * 2;
+    const maxDrawHeight = finalCanvas.height - topPadding - bottomPadding;
+    const scale = Math.min(maxDrawWidth / canvas.width, maxDrawHeight / canvas.height);
+    const drawWidth = canvas.width * scale;
+    const drawHeight = canvas.height * scale;
+    const drawX = (finalCanvas.width - drawWidth) / 2;
+    const drawY = topPadding + (maxDrawHeight - drawHeight) / 2;
+    finalCtx.drawImage(canvas, drawX, drawY, drawWidth, drawHeight);
+    const blob = await new Promise((resolve) =>
+      finalCanvas.toBlob(resolve, "image/png", 1)
+    );
+    if (!blob) return null;
+    return { blob, filename };
+  } catch (err) {
+    console.error("和解書截圖失敗", err);
+    return null;
+  }
+}
+
+async function exportMediationDownload() {
+  const result = await captureMediationPngBlob();
+  if (!result) return;
+  const { blob, filename } = result;
+  const ua = navigator.userAgent || "";
+  const isMobile = /iPhone|iPad|iPod|Android/i.test(ua);
+
+  if (isMobile && navigator.share) {
+    try {
+      const file = new File([blob], filename, { type: "image/png" });
+      if (navigator.canShare?.({ files: [file] })) {
+        await navigator.share({
+          files: [file],
+          title: "戀愛和解書",
+          text: "LoveCourt 戀愛和解書",
+        });
+        return;
+      }
+    } catch (e) {
+      if (e?.name === "AbortError") return;
+      console.log("⚠️ 手機分享儲存失敗，改用圖片預覽", e);
+    }
+  }
+
+  const url = URL.createObjectURL(blob);
+  if (isMobile) {
+    const opened = window.open(url, "_blank", "noopener,noreferrer");
+    if (!opened) window.location.href = url;
+    window.setTimeout(() => URL.revokeObjectURL(url), 60000);
     window.alert("已開啟圖片預覽頁，請長按圖片即可儲存到相簿。");
     return;
   }
@@ -1016,6 +1212,12 @@ if (verdictExportBtn) {
   });
 }
 
+if (mediationExportBtn) {
+  mediationExportBtn.addEventListener("click", () => {
+    exportMediationDownload();
+  });
+}
+
 if (verdictShareBtn) {
   verdictShareBtn.addEventListener("click", () => {
     verdictShareModalOpen();
@@ -1081,6 +1283,7 @@ if (mediationRecommendedMusicLinkEl) {
 submitBtn.addEventListener("click", async () => {
   const story = complaintInput.value.trim();
   if (!story) return;
+  lastTrialSubmitAt = Date.now();
   const accused = accusedInput ? accusedInput.value.trim() : "";
   await primeRecommendedAudioForMobile();
 
@@ -1104,6 +1307,10 @@ submitBtn.addEventListener("click", async () => {
     recommendedAudioEl.pause();
     recommendedAudioEl.currentTime = 0;
   }
+  if (mediationRecommendedAudioEl) {
+    mediationRecommendedAudioEl.pause();
+    mediationRecommendedAudioEl.currentTime = 0;
+  }
   currentRecommendedMusic = null;
 
   // ✅ 顯示「判決中」畫面
@@ -1113,13 +1320,12 @@ submitBtn.addEventListener("click", async () => {
   retryBtn.classList.add("hidden");
   loadingAnimation.classList.remove("hidden");
 
-  // ✅ 播放審判音效
-  soundEffect.currentTime = 0;
-  soundEffect.play();
+  // ✅ 播放審判音效（明確指定法槌檔；WAV 失敗時改試 MP3，行動裝置較穩）
+  playTrialSoundEffect();
   setTimeout(() => {
     soundEffect.pause();
     soundEffect.currentTime = 0;
-  }, 4000);
+  }, TRIAL_SFX_DURATION_MS);
 
   // ✅ 顯示判決內容（呼叫 GPT，不延遲；推播曲與判決同步出現）
   (async () => {
@@ -1196,18 +1402,12 @@ submitBtn.addEventListener("click", async () => {
 
         try {
           if (recommendedAudioEl && audioUrl) {
-            recommendedAudioEl.src = audioUrl;
-            recommendedAudioEl.volume = 0.8;
-            recommendedAudioEl.loop = true;
-            recommendedAudioEl.playsInline = true;
-            recommendedAudioEl.play().catch((err) => {
-              console.log("⚠️ 推播歌曲播放失敗", err);
-              enableManualMusicPlayFallback(audioUrl);
-            });
+            startVerdictBackgroundAudioAfterTrialSlot(audioUrl);
           }
         } catch (err) {
           console.log("⚠️ 推播歌曲播放錯誤", err);
           enableManualMusicPlayFallback(audioUrl);
+          attachVerdictAudioResumeOnFirstPointer(audioUrl);
         }
       }
 
