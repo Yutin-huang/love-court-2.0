@@ -33,6 +33,15 @@ const mediationSchema = new mongoose.Schema(
     },
 
     viewCount: { type: Number, default: 0 },
+
+    /** 行為紀錄（後台／除錯）：申請、開啟連結、答辯、下載等 */
+    events: [
+      {
+        action: { type: String, required: true },
+        at: { type: Date, default: () => new Date() },
+        detail: { type: String, default: '' },
+      },
+    ],
   },
   {
     timestamps: true,

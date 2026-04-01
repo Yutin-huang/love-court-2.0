@@ -31,6 +31,14 @@ const verdictSchema = new mongoose.Schema(
     rawVerdict: { type: String, default: '' },
     /** 判決當下推薦曲（供調停頁等沿用，與 API 回傳結構一致） */
     recommendedMusic: { type: mongoose.Schema.Types.Mixed, default: null },
+    /** 使用者是否曾成功「申請調停」；建立調停紀錄時寫入 */
+    mediationAppliedAt: { type: Date, default: null },
+    /** 目前對應的調停案件（最新一筆）；舊資料可能為空 */
+    mediationId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Mediation',
+      default: null,
+    },
   },
   {
     timestamps: true,

@@ -16,6 +16,15 @@ function generateToken() {
   return crypto.randomBytes(16).toString('hex');
 }
 
+function pushMediationEvent(mediation, action, detail = '') {
+  if (!Array.isArray(mediation.events)) mediation.events = [];
+  mediation.events.push({
+    action,
+    at: new Date(),
+    detail: String(detail || '').slice(0, 500),
+  });
+}
+
 /**
  * 罪名＝判決書「裁定」：與 verdict-gpt parseVerdictText 一致。
  * 優先用資料庫 crime；若為空則從 rawVerdict 解析「裁定：【…】」。
@@ -195,9 +204,20 @@ router.post('/create', async (req, res) => {
       accused,
       category,
       status: 'created',
+      events: [{ action: 'mediation_created', at: new Date(), detail: '' }],
     });
 
     await mediation.save();
+
+    await Verdict.updateOne(
+      { _id: verdictId },
+      {
+        $set: {
+          mediationId: mediation._id,
+          mediationAppliedAt: new Date(),
+        },
+      }
+    ).exec();
 
     return res.status(200).json({
       token,
@@ -220,6 +240,14 @@ router.get('/:token', async (req, res) => {
 
     const mediation = await Mediation.findOne({ token }).exec();
     if (!mediation) return res.status(404).json({ error: '找不到該調停記錄' });
+
+    mediation.viewCount = (mediation.viewCount || 0) + 1;
+    pushMediationEvent(
+      mediation,
+      'link_opened',
+      `第 ${mediation.viewCount} 次開啟調停頁`
+    );
+    await mediation.save();
 
     const linkedVerdict = await Verdict.findById(mediation.verdictId).lean().exec();
     const crime = extractRulingCharge(linkedVerdict);
@@ -267,8 +295,14 @@ router.post('/:token/respond', async (req, res) => {
     });
 
     mediation.response = response;
+    mediation.responseAt = new Date();
     mediation.settlementText = settlementText;
     mediation.status = 'responded';
+    pushMediationEvent(
+      mediation,
+      'respond_submitted',
+      `答辯字數 ${response.length}`
+    );
 
     await mediation.save();
 
@@ -284,6 +318,31 @@ router.post('/:token/respond', async (req, res) => {
       console.error('GPT response data:', err.response.data);
     }
     return res.status(500).json({ error: 'GPT 回應失敗' });
+  }
+});
+
+/** 前端回報行為（例如下載和解書圖），供後台統計 */
+router.post('/:token/events', async (req, res) => {
+  try {
+    const { token } = req.params || {};
+    const body = req.body || {};
+    const action = String(body.action || '').trim();
+    const allowed = ['export_download'];
+    if (!token) return res.status(400).json({ error: '缺少 token' });
+    if (!allowed.includes(action)) {
+      return res.status(400).json({ error: '不支援的動作' });
+    }
+
+    const mediation = await Mediation.findOne({ token }).exec();
+    if (!mediation) return res.status(404).json({ error: '找不到該調停記錄' });
+
+    pushMediationEvent(mediation, action, body.detail ? String(body.detail).slice(0, 200) : '');
+    await mediation.save();
+
+    return res.status(200).json({ ok: true });
+  } catch (err) {
+    console.error('Mediation events error:', err?.message || err);
+    return res.status(500).json({ error: '紀錄失敗' });
   }
 });
 

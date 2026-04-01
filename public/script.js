@@ -113,16 +113,7 @@ function warmAudioElement(el, src) {
 }
 
 function warmCriticalAudio() {
-  HOME_BG_TRACKS.forEach((src) => {
-    try {
-      const preloader = new Audio(src);
-      preloader.preload = "auto";
-      preloader.load();
-    } catch {
-      // ignore
-    }
-  });
-
+  // 首頁背景音檔較大，避免一次預載多首造成首屏阻塞
   if (soundEffect) {
     warmAudioElement(soundEffect, TRIAL_SFX_TRACK);
   }
@@ -182,6 +173,7 @@ function unlockHomeBackgroundAudio(audio) {
 
 function playHomeBackgroundMusic() {
   if (!homeBgAudio) return;
+  if (homeBgAudio.preload !== "auto") homeBgAudio.preload = "auto";
   homeBgAudio.play().catch(() => {});
 }
 
@@ -194,10 +186,9 @@ function initHomeBackgroundMusic() {
   const audio = homeBgAudioEl || new Audio();
   audio.src = pick;
   audio.loop = true;
-  audio.preload = "auto";
+  audio.preload = "metadata";
   audio.volume = 0.35;
   audio.playsInline = true;
-  audio.load();
   homeBgAudio = audio;
 
   unlockHomeBackgroundAudio(audio);
@@ -772,6 +763,16 @@ async function captureMediationPngBlob() {
 async function exportMediationDownload() {
   const result = await captureMediationPngBlob();
   if (!result) return;
+  if (currentMediationToken) {
+    fetch(
+      `/api/mediation/${encodeURIComponent(currentMediationToken)}/events`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "export_download" }),
+      }
+    ).catch(() => {});
+  }
   const { blob, filename } = result;
   const ua = navigator.userAgent || "";
   const isMobile = /iPhone|iPad|iPod|Android/i.test(ua);

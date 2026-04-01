@@ -58,7 +58,12 @@
       table {
         width: 100%;
         border-collapse: collapse;
-        min-width: 980px;
+        min-width: 1400px;
+      }
+      td.long {
+        max-width: 260px;
+        word-break: break-word;
+        white-space: pre-wrap;
       }
       th,
       td {
@@ -91,12 +96,19 @@
   <body>
     <main class="container">
       <h1>LoveCourt MongoDB 管理頁</h1>
-      <p class="hint">顯示最近 300 筆判決資料，可搜尋與分類篩選。</p>
+      <p class="hint">
+        顯示最近 300 筆判決資料；含調停申請、對方答辯、和解書與行為紀錄。可搜尋與分類篩選。
+      </p>
 
       <div class="toolbar">
-        <input id="keyword" type="text" placeholder="搜尋：心事、對象、判決..." />
+        <input id="keyword" type="text" placeholder="搜尋：心事、對象、判決、答辯、和解書..." />
         <select id="category">
           <option value="">全部分類</option>
+        </select>
+        <select id="mediation-filter">
+          <option value="">調停：全部</option>
+          <option value="yes">已申請調停</option>
+          <option value="no">未申請調停</option>
         </select>
         <button id="refresh-btn" type="button">重新整理</button>
       </div>
@@ -106,10 +118,15 @@
           <thead>
             <tr>
               <th>時間</th>
+              <th>申請調停</th>
+              <th>調停狀態</th>
               <th>戀愛心事</th>
               <th>控訴對象</th>
               <th>分類</th>
               <th>判決</th>
+              <th>對方答辯</th>
+              <th>和解書</th>
+              <th>行為紀錄</th>
             </tr>
           </thead>
           <tbody id="table-body"></tbody>
@@ -123,6 +140,7 @@
       const emptyEl = document.getElementById("empty");
       const keywordEl = document.getElementById("keyword");
       const categoryEl = document.getElementById("category");
+      const mediationFilterEl = document.getElementById("mediation-filter");
       const refreshBtn = document.getElementById("refresh-btn");
 
       let allRows = [];
@@ -142,6 +160,24 @@
         return d.toLocaleString("zh-TW");
       }
 
+      function mediationStatusLabel(m) {
+        if (!m) return "—";
+        if (m.status === "responded") return "已完成";
+        if (m.status === "created") return "調解中";
+        return m.status || "—";
+      }
+
+      function formatEvents(events) {
+        if (!events || !events.length) return "—";
+        return events
+          .map((e) => {
+            const t = toLocalTime(e.at);
+            const d = e.detail ? ` ${e.detail}` : "";
+            return `${t} ${e.action || ""}${d}`;
+          })
+          .join("\n");
+      }
+
       function renderCategoryOptions(data) {
         const set = new Set(data.map((x) => x.category).filter(Boolean));
         const categories = Array.from(set).sort((a, b) => a.localeCompare(b, "zh-Hant"));
@@ -153,14 +189,22 @@
       function filterRows() {
         const keyword = keywordEl.value.trim().toLowerCase();
         const category = categoryEl.value.trim();
+        const medFilter = mediationFilterEl.value;
         return allRows.filter((row) => {
           if (category && row.category !== category) return false;
+          const hasMed = Boolean(row.mediation || row.mediationAppliedAt);
+          if (medFilter === "yes" && !hasMed) return false;
+          if (medFilter === "no" && hasMed) return false;
           if (!keyword) return true;
+          const m = row.mediation;
           const haystack = [
             row.story || row.complaint || "",
             row.accused || "",
             row.category || "",
             row.judgement || row.rawVerdict || "",
+            m?.response || "",
+            m?.settlementText || "",
+            formatEvents(m?.events),
           ]
             .join(" ")
             .toLowerCase();
@@ -174,12 +218,27 @@
           .map((item) => {
             const story = item.story || item.complaint || "";
             const judgement = item.judgement || item.rawVerdict || "";
+            const m = item.mediation;
+            const applied =
+              item.mediationAppliedAt || m
+                ? `是<br><span class="small">${escapeHtml(
+                    toLocalTime(item.mediationAppliedAt || m?.createdAt)
+                  )}</span>`
+                : "否";
+            const responseText = m?.response || "";
+            const settlementText = m?.settlementText || "";
+            const eventsText = formatEvents(m?.events);
             return `<tr>
               <td><div>${escapeHtml(toLocalTime(item.createdAt))}</div><div class="small">${escapeHtml(item._id || "")}</div></td>
-              <td>${escapeHtml(story)}</td>
+              <td>${applied}</td>
+              <td>${escapeHtml(mediationStatusLabel(m))}</td>
+              <td class="long">${escapeHtml(story)}</td>
               <td>${escapeHtml(item.accused || "—")}</td>
               <td>${escapeHtml(item.category || "—")}</td>
-              <td>${escapeHtml(judgement)}</td>
+              <td class="long">${escapeHtml(judgement)}</td>
+              <td class="long" title="${escapeHtml(responseText)}">${escapeHtml(responseText || "—")}</td>
+              <td class="long" title="${escapeHtml(settlementText)}">${escapeHtml(settlementText || "—")}</td>
+              <td class="long" title="${escapeHtml(eventsText)}">${escapeHtml(eventsText)}</td>
             </tr>`;
           })
           .join("");
@@ -208,6 +267,7 @@
 
       keywordEl.addEventListener("input", renderTable);
       categoryEl.addEventListener("change", renderTable);
+      mediationFilterEl.addEventListener("change", renderTable);
       refreshBtn.addEventListener("click", loadData);
       loadData();
     </script>
