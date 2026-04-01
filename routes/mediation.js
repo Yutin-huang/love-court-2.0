@@ -3,6 +3,7 @@ import crypto from 'crypto';
 import { OpenAI } from 'openai';
 import Verdict from '../models/Verdict.js';
 import Mediation from '../models/Mediation.js';
+import { pickRecommendedMusic, parseVerdictText } from '../verdict-gpt.js';
 
 const router = express.Router();
 
@@ -13,6 +14,46 @@ const openai = new OpenAI({
 function generateToken() {
   // 128-bit token is plenty for this MVP (hex => 32 chars).
   return crypto.randomBytes(16).toString('hex');
+}
+
+/**
+ * 罪名＝判決書「裁定」：與 verdict-gpt parseVerdictText 一致。
+ * 優先用資料庫 crime；若為空則從 rawVerdict 解析「裁定：【…】」。
+ */
+function extractRulingCharge(verdict) {
+  if (!verdict) return '';
+  let fromDb = String(verdict.crime || '').trim();
+  fromDb = fromDb.replace(/^裁定[：:]\s*/, '').trim();
+  if (fromDb) return fromDb;
+
+  const raw = String(verdict.rawVerdict || '');
+  if (!raw) return '';
+
+  const bracket = raw.match(/裁定：【([\s\S]+?)】/);
+  if (bracket?.[1]) return bracket[1].trim();
+
+  const loose = raw.match(/裁定[：:]\s*([^\n]+)/);
+  if (loose?.[1]) {
+    return loose[1]
+      .replace(/^[【]|[】]$/g, '')
+      .replace(/「|」/g, '')
+      .trim();
+  }
+  return '';
+}
+
+/** 沿用判決當下推薦曲；舊資料則依 rawVerdict 重新推算（可能與當時隨機不同）。 */
+function resolveRecommendedMusicForVerdict(verdict) {
+  if (!verdict) return null;
+  if (verdict.recommendedMusic && typeof verdict.recommendedMusic === 'object') {
+    return verdict.recommendedMusic;
+  }
+  const raw = String(verdict.rawVerdict || '');
+  const { caseType } = parseVerdictText(raw);
+  return pickRecommendedMusic(
+    caseType,
+    `${verdict.story || verdict.complaint || ''}\n${verdict.accused || ''}\n${raw}`
+  );
 }
 
 async function generateSoftenedStory({ category, accused, originalStory }) {
@@ -180,6 +221,10 @@ router.get('/:token', async (req, res) => {
     const mediation = await Mediation.findOne({ token }).exec();
     if (!mediation) return res.status(404).json({ error: '找不到該調停記錄' });
 
+    const linkedVerdict = await Verdict.findById(mediation.verdictId).lean().exec();
+    const crime = extractRulingCharge(linkedVerdict);
+    const recommendedMusic = resolveRecommendedMusicForVerdict(linkedVerdict);
+
     return res.status(200).json({
       verdictId: mediation.verdictId?.toString?.() || mediation.verdictId,
       token: mediation.token,
@@ -187,9 +232,11 @@ router.get('/:token', async (req, res) => {
       softenedStory: mediation.softenedStory,
       accused: mediation.accused,
       category: mediation.category,
+      crime,
       response: mediation.response,
       settlementText: mediation.settlementText,
       status: mediation.status,
+      recommendedMusic,
       createdAt: mediation.createdAt,
       updatedAt: mediation.updatedAt,
     });

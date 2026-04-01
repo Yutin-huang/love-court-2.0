@@ -268,24 +268,59 @@
   <div id="mediation-container">
     <div id="mediation-loading" class="loading hidden">⚖️ 正在產生和解書...</div>
     <div id="mediation-content" class="hidden">
-      <p class="verdict-title">戀愛調停 / 和解書</p>
-      <p id="mediation-status" class="verdict-psych"></p>
+      <div class="mediation-page-heading">
+        <p class="verdict-title">戀愛和解書</p>
+        <p id="mediation-status" class="verdict-psych"></p>
+      </div>
 
       <div id="mediation-section-created" class="hidden">
-        <p class="verdict-suggestion">給對方看的「柔和控訴版本」</p>
+        <p id="mediation-accusation-title" class="verdict-suggestion"></p>
         <div id="mediation-softened-story" class="mediation-story"></div>
 
-        <label for="mediation-response" class="mediation-label">你的答辯（對方回覆）</label>
-        <textarea id="mediation-response" class="input-box" placeholder="把對方的回覆貼上來..."></textarea>
+        <label for="mediation-response" class="mediation-label">你的答辯</label>
+        <textarea id="mediation-response" class="input-box" placeholder="請被告提供陳述或回覆"></textarea>
         <button id="mediation-respond-btn" class="mediation-respond-btn">生成戀愛和解書</button>
       </div>
 
       <div id="mediation-section-responded" class="hidden">
-        <p class="verdict-suggestion">戀愛和解書</p>
+        <div
+          id="mediation-recommended-music"
+          class="recommended-music mediation-recommended-music hidden"
+        >
+          <p class="recommended-music-text">現在的心情適合聆聽...</p>
+          <a
+            id="mediation-recommended-music-link"
+            class="recommended-music-link"
+            href="https://linktr.ee/Yutin_Huang"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <img
+              id="mediation-recommended-music-cover"
+              class="recommended-music-cover"
+              alt="歌曲封面"
+            />
+            <p id="mediation-recommended-music-title" class="recommended-music-title"></p>
+          </a>
+          <audio
+            id="mediation-recommended-music-audio"
+            preload="auto"
+            playsinline
+            webkit-playsinline
+          ></audio>
+        </div>
+
+        <div id="mediation-settlement-head" class="mediation-settlement-head">
+          <div id="mediation-case-summary-wrap" class="mediation-case-summary-wrap hidden">
+            <p class="mediation-case-summary-label">案件摘要</p>
+            <div id="mediation-case-summary" class="mediation-case-summary"></div>
+          </div>
+        </div>
         <div id="mediation-settlement-text" class="mediation-settlement"></div>
       </div>
 
       <button id="mediation-back-btn" class="mediation-back-btn" type="button">回到首頁</button>
+      <div class="mediation-bottom-spacer" aria-hidden="true"></div>
     </div>
   </div>
 </div>

@@ -467,7 +467,7 @@ html, body {
   display: none;
 }
 
-/* ✅ 調停畫面 */
+/* ✅ 調停畫面（flex 置中 + overflow 時，底部 padding 常被吃掉，改 flex-start 並加底部 spacer） */
 #mediation-screen {
   position: fixed;
   top: 0;
@@ -477,16 +477,63 @@ html, body {
   z-index: 9999;
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  justify-content: flex-start;
   align-items: center;
   padding: 40px 20px;
+  padding-bottom: max(48px, calc(32px + env(safe-area-inset-bottom, 0px)));
+  box-sizing: border-box;
   background-color: rgba(255, 240, 250, 0.7);
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 #mediation-container {
   width: 100%;
   max-width: 520px;
+  flex: 0 0 auto;
+}
+
+/* 內容偏短時仍大致置中（不影響長文捲動） */
+@media (min-height: 640px) {
+  #mediation-screen {
+    padding-top: max(40px, min(12vh, 80px));
+  }
+}
+
+#mediation-content {
+  padding-bottom: 8px;
+}
+
+/* 捲到底時「回到首頁」下方固定留白（保證可捲動距離） */
+.mediation-bottom-spacer {
+  width: 100%;
+  height: 56px;
+  min-height: 56px;
+  flex-shrink: 0;
+  pointer-events: none;
+}
+
+/* 調停頁：標題／狀態 */
+.mediation-page-heading {
+  width: 100%;
+  text-align: left;
+}
+
+/* 最終和解書頁：推薦曲在案件摘要上方、置中，與判決頁同款尺寸 */
+#mediation-section-responded .mediation-recommended-music {
+  margin: 0 0 14px;
+  width: 100%;
+  max-width: 100%;
+  text-align: center;
+}
+
+#mediation-section-responded .mediation-recommended-music .recommended-music-cover {
+  width: 110px;
+  height: 110px;
+}
+
+#mediation-recommended-music-audio {
+  display: none;
 }
 
 .mediation-link-container {
@@ -521,6 +568,7 @@ html, body {
 
 .mediation-back-btn {
   margin-top: 20px;
+  margin-bottom: 0;
   width: 100%;
   padding: 10px 16px;
   font-family: 'Press Start 2P', cursive;
@@ -548,19 +596,83 @@ html, body {
   box-shadow: 2px 2px rgba(255, 170, 204, 0.5);
 }
 
-.mediation-settlement {
-  margin-top: 10px;
+/* 案件摘要（與下方和解書區塊同寬） */
+.mediation-settlement-head {
   width: 100%;
+}
+
+.mediation-case-summary-wrap {
+  width: 100%;
+  margin-bottom: 10px;
+  text-align: left;
+}
+
+.mediation-case-summary-label {
+  font-family: 'Noto Sans TC', '微軟正黑體', sans-serif;
+  font-size: 14px;
+  font-weight: bold;
+  color: #333;
+  margin: 0 0 8px 0;
+}
+
+.mediation-case-summary {
+  margin: 0;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 14px 14px;
+  background-color: rgba(255, 255, 255, 0.75);
+  border-radius: 12px;
+  border: 3px solid rgba(255, 128, 170, 0.35);
+  box-shadow: 2px 2px rgba(255, 170, 204, 0.5);
+  font-family: 'Noto Sans TC', '微軟正黑體', sans-serif;
+  font-size: 14px;
+  color: #333;
+  line-height: 1.8;
+  text-align: left;
+}
+
+/* 和解書主文：黑色、置左（與 mediation-story 一致） */
+.mediation-settlement {
+  margin-top: 0;
+  width: 100%;
+  box-sizing: border-box;
   background-color: rgba(255, 255, 255, 0.75);
   border-radius: 12px;
   padding: 14px 14px;
   font-family: 'Noto Sans TC', '微軟正黑體', sans-serif;
   color: #333;
-  white-space: pre-wrap;
+  text-align: left;
   line-height: 1.8;
   font-size: 14px;
   border: 3px solid rgba(255, 128, 170, 0.35);
   box-shadow: 2px 2px rgba(255, 170, 204, 0.5);
+}
+
+.mediation-settlement .settlement-p {
+  margin: 0 0 12px 0;
+}
+
+.mediation-settlement .settlement-p--lead,
+.mediation-settlement .settlement-p--psych,
+.mediation-settlement .settlement-p--crime,
+.mediation-settlement .settlement-p--suggestion,
+.mediation-settlement .settlement-p--judgement {
+  font-family: 'Noto Sans TC', '微軟正黑體', sans-serif;
+  font-size: 14px;
+  font-weight: normal;
+  color: #333;
+  line-height: 1.8;
+  margin-bottom: 12px;
+}
+
+.mediation-settlement .settlement-p:last-child {
+  margin-bottom: 0;
+}
+
+/* 無案件摘要時，主文與上方內容留白 */
+#mediation-settlement-head:not(:has(.mediation-case-summary-wrap:not(.hidden)))
+  + #mediation-settlement-text {
+  margin-top: 10px;
 }
 
 .mediation-label {

@@ -202,7 +202,7 @@ function buildSystemPrompt(category, accused) {
 
 判決：[法庭式收尾，可微幽默但要合理]
 
-案件類型：只填入其中一個文字（人生方向/安全感/過去回憶與心碎/戀愛進行式與鬥嘴）
+案件類型：只填入其中一個文字（人生方向/安全感/過去回憶與心碎/戀愛進行式與鬥嘴）。若主軸為出國、留學、移民、人生／生涯規劃、未來願景、學業與感情、分隔兩地發展等，請填「人生方向」。
 
 ——————————————
 
@@ -255,7 +255,7 @@ ${accusedLine}
 裁定：【（趣味罪名或榮譽頭銜，8～16 字）】
 建議：「（療癒＋具體小行動，一句）」
 判決：本庭裁定：「（一句，可含輕微懲罰感或自我疼愛任務，一句）」
-案件類型：【只能填入一個選項文字（不要包含其他選項）人生方向/安全感/過去回憶與心碎/戀愛進行式與鬥嘴】
+案件類型：【只能填入一個選項文字（不要包含其他選項）人生方向/安全感/過去回憶與心碎/戀愛進行式與鬥嘴】（出國、留學、人生規劃、未來願景、兩地／異地發展與感情並存 → 人生方向）
 
 使用繁體中文；總長度約 120～220 字；避免髒話與真實仇恨言論。`;
 }
@@ -302,6 +302,17 @@ function testCurrentPartnerForMusic(content) {
   );
 }
 
+/**
+ * 人生規劃／出國／未來願景／生涯與感情並行 → 「人生方向」資料夾歌曲。
+ * 需優先於「現任／曖昧 → 戀愛進行式與鬥嘴」，否則「出國＋男友」會被誤配。
+ */
+function matchesLifeDirectionThemes(text) {
+  const s = String(text || '');
+  return /(出國|留學|移民|海外(?:工作|生活|念書|讀書)?|人生規劃|生涯規劃|生涯|未來願景|未來規劃|規劃人生|人生課題|人生下一步|讀書計畫|升學|申請學校|申請研究所|交換學生|分隔兩地|兩地(?:生活|工作)?|異地(?:發展|戀愛|工作)?|遠距離發展|遠距離戀愛|一起的未來|我們的未來|人生的選擇|工作與感情|學業與愛情|轉職|換工作|念研究所|念書|攻讀|博士班|碩士班)/.test(
+    s
+  );
+}
+
 function inferCaseTypeFromText(text) {
   const content = (text || '').toLowerCase();
   if (!content) return '';
@@ -309,6 +320,10 @@ function inferCaseTypeFromText(text) {
   // 前任不算現任戀愛鬥嘴場景
   if (RE_EX_PARTNER.test(content)) {
     return '';
+  }
+
+  if (matchesLifeDirectionThemes(text)) {
+    return '人生方向';
   }
 
   // User requested these scenarios to always map to 罪魁禍首 (戀愛進行式與鬥嘴)
@@ -328,7 +343,10 @@ function inferCaseTypeFromText(text) {
     return '過去回憶與心碎';
   }
 
-  if (/(人生|方向|夢想|工作|目標|未來|選擇)/.test(content)) {
+  if (
+    /(人生|方向|夢想|工作|目標|未來|選擇)/.test(content) &&
+    !/(曖昧|打情罵俏|鬥嘴|吵嘴|拌嘴|已讀|未讀)/.test(content)
+  ) {
     return '人生方向';
   }
 
@@ -380,7 +398,12 @@ function pickRecommendedMusic(caseType, textForFallback) {
   const forceBoyfriendToKuikui =
     !isExPartner && testCurrentPartnerForMusic(content);
   const inferredType = inferCaseTypeFromText(textForFallback);
+  const lifeDirectionFromStory =
+    !isExPartner && matchesLifeDirectionThemes(textForFallback)
+      ? '人生方向'
+      : '';
   const normalizedType =
+    lifeDirectionFromStory ||
     (forceBoyfriendToKuikui && '戀愛進行式與鬥嘴') ||
     CASE_TYPES.find((t) => caseType?.includes?.(t)) ||
     inferredType ||
@@ -473,6 +496,11 @@ ${story}`;
     const { psychTest, crime, suggestion, judgement, caseType } =
       parseVerdictText(verdictText);
 
+    const recommendedMusic = pickRecommendedMusic(
+      caseType,
+      `${story}\n${accused}\n${verdictText}`
+    );
+
     const newVerdict = new Verdict({
       story,
       complaint: story,
@@ -483,13 +511,12 @@ ${story}`;
       suggestion,
       judgement,
       rawVerdict: verdictText,
+      recommendedMusic:
+        recommendedMusic && typeof recommendedMusic === 'object'
+          ? recommendedMusic
+          : undefined,
     });
     await newVerdict.save();
-
-    const recommendedMusic = pickRecommendedMusic(
-      caseType,
-      `${story}\n${accused}\n${verdictText}`
-    );
 
     res.status(200).json({
       verdictId: newVerdict._id.toString(),
@@ -514,3 +541,4 @@ ${story}`;
 });
 
 export default router;
+export { pickRecommendedMusic, parseVerdictText };

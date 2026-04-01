@@ -33,11 +33,18 @@ const mediationStatusEl = document.getElementById("mediation-status");
 const mediationSoftenedStoryEl = document.getElementById(
   "mediation-softened-story"
 );
+const mediationAccusationTitleEl = document.getElementById(
+  "mediation-accusation-title"
+);
 const mediationResponseInput = document.getElementById("mediation-response");
 const mediationRespondBtn = document.getElementById(
   "mediation-respond-btn"
 );
 const mediationSettlementEl = document.getElementById("mediation-settlement-text");
+const mediationCaseSummaryWrapEl = document.getElementById(
+  "mediation-case-summary-wrap"
+);
+const mediationCaseSummaryEl = document.getElementById("mediation-case-summary");
 const mediationSectionCreatedEl = document.getElementById(
   "mediation-section-created"
 );
@@ -45,6 +52,21 @@ const mediationSectionRespondedEl = document.getElementById(
   "mediation-section-responded"
 );
 const mediationBackBtn = document.getElementById("mediation-back-btn");
+const mediationRecommendedMusicEl = document.getElementById(
+  "mediation-recommended-music"
+);
+const mediationRecommendedCoverEl = document.getElementById(
+  "mediation-recommended-music-cover"
+);
+const mediationRecommendedTitleEl = document.getElementById(
+  "mediation-recommended-music-title"
+);
+const mediationRecommendedMusicLinkEl = document.getElementById(
+  "mediation-recommended-music-link"
+);
+const mediationRecommendedAudioEl = document.getElementById(
+  "mediation-recommended-music-audio"
+);
 const verdictExportBtn = document.getElementById("verdict-export-btn");
 const verdictShareBtn = document.getElementById("verdict-share-btn");
 const verdictShareModal = document.getElementById("verdict-share-modal");
@@ -52,6 +74,8 @@ const verdictShareModal = document.getElementById("verdict-share-modal");
 let currentVerdictId = null;
 let currentMediationToken = null;
 let currentRecommendedMusic = null;
+/** 調停 GET 回傳的推薦曲；僅在完成和解書後才顯示，輸入答辯頁不播放 */
+let mediationCachedRecommendedMusic = null;
 let isAudioPrimed = false;
 
 function show(el) {
@@ -67,6 +91,112 @@ function hide(el) {
 function firstLineIncluding(verdict, keywords) {
   const lines = verdict.trim().split("\n");
   return lines.find((line) => keywords.some((k) => line.includes(k))) || "";
+}
+
+function escapeHtml(s) {
+  return String(s)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+/**
+ * 依段落數對應判決書層級：標題 → 心理／裁定／建議／判決內文。
+ */
+function settlementParagraphTierClass(index, total) {
+  if (total === 1) return "settlement-p--lead";
+  if (total === 2) {
+    return index === 0 ? "settlement-p--lead" : "settlement-p--judgement";
+  }
+  if (total === 3) {
+    return ["settlement-p--lead", "settlement-p--psych", "settlement-p--judgement"][
+      index
+    ];
+  }
+  if (total === 4) {
+    return [
+      "settlement-p--lead",
+      "settlement-p--psych",
+      "settlement-p--crime",
+      "settlement-p--judgement",
+    ][index];
+  }
+  if (total === 5) {
+    return [
+      "settlement-p--lead",
+      "settlement-p--psych",
+      "settlement-p--crime",
+      "settlement-p--suggestion",
+      "settlement-p--judgement",
+    ][index];
+  }
+  if (index === 0) return "settlement-p--lead";
+  if (index === 1) return "settlement-p--psych";
+  if (index === 2) return "settlement-p--crime";
+  if (index === 3) return "settlement-p--suggestion";
+  return "settlement-p--judgement";
+}
+
+/**
+ * 從和解書全文拆出「【案件摘要】」區塊與其餘內容（供並排顯示）。
+ */
+function extractCaseSummaryAndRest(text) {
+  const t = (text || "").trim();
+  if (!t) return { summaryBody: "", rest: "" };
+  const blockRe = /【案件摘要】[\s\S]*?(?=\n【[^】]+】|$)/;
+  const m = t.match(blockRe);
+  if (!m) return { summaryBody: "", rest: t };
+  const fullBlock = m[0];
+  const summaryBody = fullBlock.replace(/^【案件摘要】\s*/, "").trim();
+  const rest = (t.slice(0, m.index) + t.slice(m.index + fullBlock.length)).trim();
+  return { summaryBody, rest };
+}
+
+function splitSettlementParagraphs(text) {
+  const t = (text || "").trim();
+  if (!t) return [];
+  let parts = t.split(/\n\s*\n/).filter((p) => p.length > 0);
+  if (parts.length === 1 && /【/.test(parts[0])) {
+    const byHeader = parts[0].split(/\n(?=【[^】]+】)/);
+    if (byHeader.length > 1) {
+      parts = byHeader.map((s) => s.trim()).filter(Boolean);
+    }
+  }
+  return parts;
+}
+
+function formatSettlementHtml(text) {
+  const trimmed = (text || "").trim();
+  if (!trimmed) return "";
+  const paras = splitSettlementParagraphs(trimmed);
+  const total = paras.length;
+  return paras
+    .map((raw, i) => {
+      const tier = settlementParagraphTierClass(i, total);
+      const inner = escapeHtml(raw).replace(/\n/g, "<br>");
+      return `<p class="settlement-p ${tier}">${inner}</p>`;
+    })
+    .join("");
+}
+
+function setMediationSettlementContent(text) {
+  const { summaryBody, rest } = extractCaseSummaryAndRest(text || "");
+  const hasSummary = Boolean(summaryBody);
+
+  if (mediationCaseSummaryEl && mediationCaseSummaryWrapEl) {
+    if (hasSummary) {
+      mediationCaseSummaryEl.innerHTML = escapeHtml(summaryBody).replace(/\n/g, "<br>");
+      mediationCaseSummaryWrapEl.classList.remove("hidden");
+    } else {
+      mediationCaseSummaryEl.innerHTML = "";
+      mediationCaseSummaryWrapEl.classList.add("hidden");
+    }
+  }
+
+  if (mediationSettlementEl) {
+    mediationSettlementEl.innerHTML = formatSettlementHtml(rest);
+  }
 }
 
 /**
@@ -105,6 +235,129 @@ function enableManualMusicPlayFallback(audioUrl) {
     },
     { once: true }
   );
+}
+
+function enableManualMediationMusicPlayFallback(audioUrl) {
+  if (!mediationRecommendedMusicEl || !mediationRecommendedAudioEl || !audioUrl) {
+    return;
+  }
+  mediationRecommendedMusicEl.addEventListener(
+    "click",
+    () => {
+      mediationRecommendedAudioEl.src = audioUrl;
+      mediationRecommendedAudioEl.muted = false;
+      mediationRecommendedAudioEl.volume = 0.8;
+      mediationRecommendedAudioEl.loop = true;
+      mediationRecommendedAudioEl.play().catch(() => {});
+    },
+    { once: true }
+  );
+}
+
+/** 自動播放被阻擋時，使用者第一次在調停畫面任一處觸控即嘗試背景播放 */
+function attachMediationAudioResumeOnFirstPointer(audioUrl) {
+  if (!mediationScreen || !mediationRecommendedAudioEl || !audioUrl) return;
+  mediationScreen.addEventListener(
+    "pointerdown",
+    () => {
+      const el = mediationRecommendedAudioEl;
+      if (!el.src) el.src = audioUrl;
+      el.muted = false;
+      el.volume = 0.8;
+      el.loop = true;
+      el.playsInline = true;
+      el.play().catch(() => {});
+    },
+    { once: true }
+  );
+}
+
+/**
+ * 設定 src 後等媒體可播再 play（避免 load() + 立即 play 早於緩衝而失敗）
+ */
+function startMediationBackgroundAudio(audioUrl) {
+  const el = mediationRecommendedAudioEl;
+  if (!el || !audioUrl) return;
+
+  const onFail = () => {
+    enableManualMediationMusicPlayFallback(audioUrl);
+    attachMediationAudioResumeOnFirstPointer(audioUrl);
+  };
+
+  el.pause();
+  el.removeAttribute("src");
+  el.muted = false;
+  el.volume = 0.8;
+  el.loop = true;
+  el.playsInline = true;
+  el.setAttribute("playsinline", "");
+  el.setAttribute("webkit-playsinline", "");
+
+  const tryPlay = () => {
+    el.play().catch((err) => {
+      console.log("⚠️ 調停頁推播歌曲播放失敗", err);
+      onFail();
+    });
+  };
+
+  const onReady = () => {
+    tryPlay();
+  };
+
+  el.addEventListener("canplay", onReady, { once: true });
+  el.addEventListener(
+    "error",
+    () => {
+      el.removeEventListener("canplay", onReady);
+      onFail();
+    },
+    { once: true }
+  );
+
+  el.src = audioUrl;
+  el.load();
+}
+
+function applyMediationRecommendedMusic(music) {
+  if (!mediationRecommendedMusicEl) return;
+  if (mediationRecommendedAudioEl) {
+    mediationRecommendedAudioEl.pause();
+    mediationRecommendedAudioEl.removeAttribute("src");
+    mediationRecommendedAudioEl.currentTime = 0;
+  }
+  if (!music || typeof music !== "object") {
+    mediationRecommendedMusicEl.classList.add("hidden");
+    return;
+  }
+  const { coverUrl, songTitle, audioUrl, listenUrl, spotifyUrl } = music;
+  currentRecommendedMusic = music;
+  if (mediationRecommendedCoverEl && coverUrl) {
+    mediationRecommendedCoverEl.src = coverUrl;
+  }
+  if (mediationRecommendedTitleEl) {
+    mediationRecommendedTitleEl.textContent = songTitle || "";
+  }
+  if (mediationRecommendedMusicLinkEl) {
+    mediationRecommendedMusicLinkEl.href =
+      spotifyUrl || listenUrl || "https://linktr.ee/Yutin_Huang";
+  }
+  mediationRecommendedMusicEl.classList.remove("hidden");
+  try {
+    if (mediationRecommendedAudioEl && audioUrl) {
+      startMediationBackgroundAudio(audioUrl);
+    }
+  } catch (err) {
+    console.log("⚠️ 調停頁推播歌曲錯誤", err);
+    enableManualMediationMusicPlayFallback(audioUrl);
+  }
+}
+
+function formatMediationAccusationTitle(crimeRaw) {
+  const charge = (crimeRaw || "")
+    .replace(/^裁定[：:]\s*/, "")
+    .trim();
+  const part = charge || "……";
+  return `您已被指控為「${part}」罪，以下為原告控訴內容`;
 }
 
 function scrollMediationLinkIntoView() {
@@ -202,7 +455,43 @@ async function exportVerdictDownload() {
   const result = await captureVerdictPngBlob();
   if (!result) return;
   const { blob, filename } = result;
+  const ua = navigator.userAgent || "";
+  const isMobile = /iPhone|iPad|iPod|Android/i.test(ua);
+
+  // Mobile browsers (especially iOS Safari) often ignore blob downloads.
+  // Prefer native share sheet so users can directly save image.
+  if (isMobile && navigator.share) {
+    try {
+      const file = new File([blob], filename, { type: "image/png" });
+      if (navigator.canShare?.({ files: [file] })) {
+        await navigator.share({
+          files: [file],
+          title: "戀愛判決書",
+          text: "LoveCourt 戀愛判決書",
+        });
+        return;
+      }
+    } catch (e) {
+      if (e?.name === "AbortError") return;
+      console.log("⚠️ 手機分享儲存失敗，改用圖片預覽", e);
+    }
+  }
+
   const url = URL.createObjectURL(blob);
+
+  // Mobile fallback: open image in new tab for long-press save.
+  if (isMobile) {
+    const opened = window.open(url, "_blank", "noopener,noreferrer");
+    if (!opened) {
+      window.location.href = url;
+    }
+    window.setTimeout(() => {
+      URL.revokeObjectURL(url);
+    }, 60000);
+    window.alert("已開啟圖片預覽頁，請長按圖片即可儲存到相簿。");
+    return;
+  }
+
   const a = document.createElement("a");
   a.href = url;
   a.download = filename;
@@ -432,7 +721,7 @@ async function createMediation() {
     const linkText = data.link || "";
     if (mediationLinkContainer) {
       mediationLinkContainer.innerHTML = `
-        <div>已生成你的調停連結</div>
+        <div>把調解連結傳給你的對方吧！</div>
         <a href="${linkText}" target="_blank" rel="noopener noreferrer">${linkText}</a>
       `;
       show(mediationLinkContainer);
@@ -470,12 +759,25 @@ async function loadMediation(token) {
       if (mediationStatusEl) mediationStatusEl.textContent = data.error || "讀取調停失敗";
       hide(mediationSectionCreatedEl);
       hide(mediationSectionRespondedEl);
+      mediationCachedRecommendedMusic = null;
+      applyMediationRecommendedMusic(null);
       return;
     }
 
     if (mediationStatusEl) {
       mediationStatusEl.textContent =
-        data.status === "responded" ? "狀態：已完成回覆" : "狀態：等待對方回覆";
+        data.status === "responded" ? "狀態：已完成回覆" : "狀態：調解中";
+    }
+
+    mediationCachedRecommendedMusic =
+      data.recommendedMusic && typeof data.recommendedMusic === "object"
+        ? data.recommendedMusic
+        : null;
+
+    if (mediationAccusationTitleEl) {
+      mediationAccusationTitleEl.textContent = formatMediationAccusationTitle(
+        data.crime
+      );
     }
 
     if (mediationSoftenedStoryEl) {
@@ -483,18 +785,22 @@ async function loadMediation(token) {
     }
 
     if (data.status === "responded") {
-      if (mediationSettlementEl) mediationSettlementEl.textContent = data.settlementText || "";
+      setMediationSettlementContent(data.settlementText || "");
       hide(mediationSectionCreatedEl);
       show(mediationSectionRespondedEl);
+      applyMediationRecommendedMusic(mediationCachedRecommendedMusic);
     } else {
       hide(mediationSectionRespondedEl);
       show(mediationSectionCreatedEl);
+      applyMediationRecommendedMusic(null);
     }
   } catch (err) {
     console.error("Mediation load error:", err);
     hide(mediationLoadingEl);
     show(mediationContentEl);
     if (mediationStatusEl) mediationStatusEl.textContent = "讀取調停失敗";
+    mediationCachedRecommendedMusic = null;
+    applyMediationRecommendedMusic(null);
   }
 }
 
@@ -528,11 +834,12 @@ async function respondMediation() {
       return;
     }
 
-    if (mediationSettlementEl) mediationSettlementEl.textContent = data.settlementText || "";
+    setMediationSettlementContent(data.settlementText || "");
     if (mediationStatusEl) mediationStatusEl.textContent = "狀態：已完成回覆";
 
     hide(mediationSectionCreatedEl);
     show(mediationSectionRespondedEl);
+    applyMediationRecommendedMusic(mediationCachedRecommendedMusic);
   } catch (err) {
     console.error("Mediation respond error:", err);
     hide(mediationLoadingEl);
@@ -627,21 +934,30 @@ if (verdictShareModal) {
   });
 }
 
+function handleRecommendedMusicLinkClick(event) {
+  event.preventDefault();
+  const fallbackUrl =
+    currentRecommendedMusic?.listenUrl || "https://linktr.ee/Yutin_Huang";
+  const spotifyUrl = currentRecommendedMusic?.spotifyUrl;
+  if (spotifyUrl && typeof spotifyUrl === "string") {
+    openSpotifyTrackPage(spotifyUrl, fallbackUrl);
+    return;
+  }
+  const queryText =
+    currentRecommendedMusic?.streamQuery ||
+    `${currentRecommendedMusic?.songTitle || ""} 黃于庭`;
+  smartOpenStreaming(queryText, fallbackUrl);
+}
+
 if (recommendedMusicLinkEl) {
-  recommendedMusicLinkEl.addEventListener("click", (event) => {
-    event.preventDefault();
-    const fallbackUrl =
-      currentRecommendedMusic?.listenUrl || "https://linktr.ee/Yutin_Huang";
-    const spotifyUrl = currentRecommendedMusic?.spotifyUrl;
-    if (spotifyUrl && typeof spotifyUrl === "string") {
-      openSpotifyTrackPage(spotifyUrl, fallbackUrl);
-      return;
-    }
-    const queryText =
-      currentRecommendedMusic?.streamQuery ||
-      `${currentRecommendedMusic?.songTitle || ""} 黃于庭`;
-    smartOpenStreaming(queryText, fallbackUrl);
-  });
+  recommendedMusicLinkEl.addEventListener("click", handleRecommendedMusicLinkClick);
+}
+
+if (mediationRecommendedMusicLinkEl) {
+  mediationRecommendedMusicLinkEl.addEventListener(
+    "click",
+    handleRecommendedMusicLinkClick
+  );
 }
 
 // ✅ 審判按下後流程
@@ -809,6 +1125,11 @@ submitBtn.addEventListener("click", async () => {
   if (verdictScreen) verdictScreen.classList.add("hidden");
   if (contentArea) contentArea.classList.add("hidden");
   if (mediationScreen) show(mediationScreen);
+
+  if (recommendedAudioEl) {
+    recommendedAudioEl.pause();
+    recommendedAudioEl.currentTime = 0;
+  }
 
   if (mediationBackBtn) mediationBackBtn.focus?.();
   loadMediation(token);

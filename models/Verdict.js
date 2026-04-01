@@ -29,6 +29,8 @@ const verdictSchema = new mongoose.Schema(
     judgement: { type: String, default: '' },
     /** 完整 GPT 原文（除錯／日後改版） */
     rawVerdict: { type: String, default: '' },
+    /** 判決當下推薦曲（供調停頁等沿用，與 API 回傳結構一致） */
+    recommendedMusic: { type: mongoose.Schema.Types.Mixed, default: null },
   },
   {
     timestamps: true,
