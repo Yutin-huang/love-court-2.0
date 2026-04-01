@@ -229,15 +229,32 @@ function setMediationSettlementContent(text) {
 async function primeRecommendedAudioForMobile() {
   if (isAudioPrimed) return;
   try {
-    const unlockSrc = soundEffect?.currentSrc || "/gavel-sound.wav";
-    // Use a temporary audio object to avoid racing/overwriting the real
-    // recommended music element.
-    const primer = new Audio(unlockSrc);
-    primer.muted = true;
-    primer.playsInline = true;
-    await primer.play();
-    primer.pause();
-    primer.currentTime = 0;
+    const unlockSrc =
+      soundEffect?.currentSrc ||
+      soundEffect?.querySelector("source")?.src ||
+      "/gavel-sound.wav";
+
+    // 1) 先解鎖推薦歌曲實際播放用的 audio element（成功率較高）
+    if (recommendedAudioEl) {
+      recommendedAudioEl.src = unlockSrc;
+      recommendedAudioEl.muted = true;
+      recommendedAudioEl.playsInline = true;
+      await recommendedAudioEl.play();
+      recommendedAudioEl.pause();
+      recommendedAudioEl.currentTime = 0;
+      recommendedAudioEl.removeAttribute("src");
+      recommendedAudioEl.load();
+    }
+
+    // 2) 也解鎖審判音效元素
+    if (soundEffect) {
+      soundEffect.muted = true;
+      await soundEffect.play();
+      soundEffect.pause();
+      soundEffect.currentTime = 0;
+      soundEffect.muted = false;
+    }
+
     isAudioPrimed = true;
   } catch (err) {
     // Ignore prime failure; manual tap fallback is handled later.
