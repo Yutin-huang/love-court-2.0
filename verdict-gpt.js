@@ -461,6 +461,15 @@ function pickRecommendedMusic(caseType, textForFallback) {
   return null;
 }
 
+/** 監控用：不呼叫 GPT，只確認路由與金鑰存在 */
+router.get('/health', (req, res) => {
+  const hasKey = Boolean(process.env.OPENAI_API_KEY?.trim());
+  if (!hasKey) {
+    return res.status(503).json({ ok: false, error: 'OPENAI_API_KEY missing' });
+  }
+  res.status(200).json({ ok: true, openai: true });
+});
+
 router.post('/', async (req, res) => {
   try {
     const body = req.body || {};

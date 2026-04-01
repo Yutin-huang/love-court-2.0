@@ -21,6 +21,31 @@ mongoose.connect(process.env.MONGO_URI)
 .then(() => console.log('✅ 已連接到 MongoDB'))
 .catch((err) => console.error('❌ MongoDB 連接錯誤', err));
 
+// ✅ 監控／健康檢查（放在 static 之前：純 server 回應、不受前端與靜態檔影響）
+app.get('/health', (req, res) => {
+  res.status(200).type('text/plain').send('ok');
+});
+
+app.get('/db-check', async (req, res) => {
+  try {
+    const readyState = mongoose.connection.readyState;
+    if (readyState !== 1) {
+      return res.status(503).json({
+        ok: false,
+        db: 'not_ready',
+        readyState,
+      });
+    }
+    await mongoose.connection.db.admin().ping();
+    res.status(200).json({ ok: true, db: 'connected' });
+  } catch (err) {
+    res.status(503).json({
+      ok: false,
+      error: err?.message || 'db ping failed',
+    });
+  }
+});
+
 // ✅ 中介層
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.json());
