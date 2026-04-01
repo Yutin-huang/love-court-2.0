@@ -1002,6 +1002,36 @@ function openSpotifyTrackPage(webUrl, fallbackUrl) {
   }, 4500);
 }
 
+async function copyTextToClipboard(text) {
+  const value = String(text || "").trim();
+  if (!value) return false;
+  try {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(value);
+      return true;
+    }
+  } catch {
+    // fall through to legacy copy
+  }
+
+  try {
+    const ta = document.createElement("textarea");
+    ta.value = value;
+    ta.setAttribute("readonly", "");
+    ta.style.position = "fixed";
+    ta.style.opacity = "0";
+    ta.style.pointerEvents = "none";
+    document.body.appendChild(ta);
+    ta.focus();
+    ta.select();
+    const ok = document.execCommand("copy");
+    ta.remove();
+    return Boolean(ok);
+  } catch {
+    return false;
+  }
+}
+
 async function createMediation() {
   if (!currentVerdictId) return;
 
@@ -1034,6 +1064,9 @@ async function createMediation() {
       mediationLinkContainer.innerHTML = `
         <div>把調解連結傳給你的對方吧！</div>
         <a href="${linkText}" target="_blank" rel="noopener noreferrer">${linkText}</a>
+        <button type="button" class="mediation-link-copy-btn" data-link="${linkText}">
+          複製連結
+        </button>
       `;
       show(mediationLinkContainer);
       scrollMediationLinkIntoView();
@@ -1278,6 +1311,19 @@ if (mediationRecommendedMusicLinkEl) {
     "click",
     handleRecommendedMusicLinkClick
   );
+}
+
+if (mediationLinkContainer) {
+  mediationLinkContainer.addEventListener("click", async (event) => {
+    const btn = event.target.closest(".mediation-link-copy-btn");
+    if (!btn) return;
+    const link = btn.dataset.link || "";
+    const ok = await copyTextToClipboard(link);
+    btn.textContent = ok ? "已複製！" : "複製失敗";
+    setTimeout(() => {
+      btn.textContent = "複製連結";
+    }, 1200);
+  });
 }
 
 // ✅ 審判按下後流程

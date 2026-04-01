@@ -445,12 +445,29 @@ html, body {
   color: #c2185b;
   text-align: center;
   font-size: 14px;
+  -webkit-user-select: text;
+  user-select: text;
+  -webkit-touch-callout: default;
 }
 
 .mediation-link-container a {
   color: #ff1493;
   text-decoration: underline;
   word-break: break-all;
+  display: inline-block;
+  margin-top: 4px;
+}
+
+.mediation-link-copy-btn {
+  margin-top: 8px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 2px solid #ff8fc7;
+  background: #fff4fa;
+  color: #c2185b;
+  font-family: 'Noto Sans TC', '微軟正黑體', sans-serif;
+  font-size: 13px;
+  cursor: pointer;
 }
 
 .mediation-respond-btn {

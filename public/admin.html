@@ -91,6 +91,70 @@
         padding: 20px;
         color: #8b7281;
       }
+      .zoom-btn {
+        width: 100%;
+        border: 1px solid #ead3df;
+        border-radius: 8px;
+        background: #fff;
+        color: #4d3b46;
+        font-size: 12px;
+        line-height: 1.5;
+        text-align: left;
+        padding: 8px;
+        cursor: zoom-in;
+      }
+      .zoom-btn:hover {
+        background: #fff6fb;
+      }
+      .zoom-modal {
+        position: fixed;
+        inset: 0;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+        background: rgba(35, 20, 30, 0.55);
+        z-index: 9999;
+      }
+      .zoom-modal.show {
+        display: flex;
+      }
+      .zoom-panel {
+        width: min(920px, 96vw);
+        max-height: 85vh;
+        overflow: auto;
+        background: #fff;
+        border-radius: 14px;
+        border: 1px solid #edd8e3;
+        box-shadow: 0 12px 36px rgba(30, 10, 20, 0.25);
+        padding: 14px;
+      }
+      .zoom-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        margin-bottom: 10px;
+      }
+      .zoom-title {
+        margin: 0;
+        color: #c2185b;
+        font-size: 16px;
+      }
+      .zoom-close {
+        border: 1px solid #e4cad7;
+        border-radius: 8px;
+        background: #fff7fb;
+        color: #7b5167;
+        padding: 6px 10px;
+        cursor: pointer;
+      }
+      .zoom-content {
+        white-space: pre-wrap;
+        word-break: break-word;
+        line-height: 1.75;
+        font-size: 15px;
+      }
     </style>
   </head>
   <body>
@@ -134,6 +198,15 @@
         <div id="empty" class="empty" hidden>目前沒有符合資料</div>
       </div>
     </main>
+    <div id="zoom-modal" class="zoom-modal" aria-hidden="true">
+      <div class="zoom-panel">
+        <div class="zoom-head">
+          <h3 id="zoom-title" class="zoom-title">內容放大檢視</h3>
+          <button id="zoom-close" class="zoom-close" type="button">關閉</button>
+        </div>
+        <div id="zoom-content" class="zoom-content"></div>
+      </div>
+    </div>
 
     <script>
       const bodyEl = document.getElementById("table-body");
@@ -142,6 +215,10 @@
       const categoryEl = document.getElementById("category");
       const mediationFilterEl = document.getElementById("mediation-filter");
       const refreshBtn = document.getElementById("refresh-btn");
+      const zoomModalEl = document.getElementById("zoom-modal");
+      const zoomTitleEl = document.getElementById("zoom-title");
+      const zoomContentEl = document.getElementById("zoom-content");
+      const zoomCloseEl = document.getElementById("zoom-close");
 
       let allRows = [];
 
@@ -228,6 +305,9 @@
             const responseText = m?.response || "";
             const settlementText = m?.settlementText || "";
             const eventsText = formatEvents(m?.events);
+            const shortResponse = responseText ? responseText.slice(0, 60) : "—";
+            const shortSettlement = settlementText ? settlementText.slice(0, 60) : "—";
+            const shortEvents = eventsText ? eventsText.slice(0, 60) : "—";
             return `<tr>
               <td><div>${escapeHtml(toLocalTime(item.createdAt))}</div><div class="small">${escapeHtml(item._id || "")}</div></td>
               <td>${applied}</td>
@@ -236,13 +316,31 @@
               <td>${escapeHtml(item.accused || "—")}</td>
               <td>${escapeHtml(item.category || "—")}</td>
               <td class="long">${escapeHtml(judgement)}</td>
-              <td class="long" title="${escapeHtml(responseText)}">${escapeHtml(responseText || "—")}</td>
-              <td class="long" title="${escapeHtml(settlementText)}">${escapeHtml(settlementText || "—")}</td>
-              <td class="long" title="${escapeHtml(eventsText)}">${escapeHtml(eventsText)}</td>
+              <td class="long">
+                <button type="button" class="zoom-btn" data-title="對方答辯" data-content="${escapeHtml(responseText || "—")}">${escapeHtml(shortResponse)}${responseText.length > 60 ? "..." : ""}</button>
+              </td>
+              <td class="long">
+                <button type="button" class="zoom-btn" data-title="和解書全文" data-content="${escapeHtml(settlementText || "—")}">${escapeHtml(shortSettlement)}${settlementText.length > 60 ? "..." : ""}</button>
+              </td>
+              <td class="long">
+                <button type="button" class="zoom-btn" data-title="行為紀錄" data-content="${escapeHtml(eventsText || "—")}">${escapeHtml(shortEvents)}${eventsText.length > 60 ? "..." : ""}</button>
+              </td>
             </tr>`;
           })
           .join("");
         emptyEl.hidden = rows.length !== 0;
+      }
+
+      function openZoom(title, content) {
+        zoomTitleEl.textContent = title || "內容放大檢視";
+        zoomContentEl.textContent = content || "—";
+        zoomModalEl.classList.add("show");
+        zoomModalEl.setAttribute("aria-hidden", "false");
+      }
+
+      function closeZoom() {
+        zoomModalEl.classList.remove("show");
+        zoomModalEl.setAttribute("aria-hidden", "true");
       }
 
       async function loadData() {
@@ -269,6 +367,18 @@
       categoryEl.addEventListener("change", renderTable);
       mediationFilterEl.addEventListener("change", renderTable);
       refreshBtn.addEventListener("click", loadData);
+      bodyEl.addEventListener("click", (event) => {
+        const btn = event.target.closest(".zoom-btn");
+        if (!btn) return;
+        openZoom(btn.dataset.title, btn.dataset.content);
+      });
+      zoomCloseEl.addEventListener("click", closeZoom);
+      zoomModalEl.addEventListener("click", (event) => {
+        if (event.target === zoomModalEl) closeZoom();
+      });
+      document.addEventListener("keydown", (event) => {
+        if (event.key === "Escape") closeZoom();
+      });
       loadData();
     </script>
   </body>
