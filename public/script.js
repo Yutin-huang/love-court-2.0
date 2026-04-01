@@ -77,6 +77,7 @@ let currentRecommendedMusic = null;
 /** 調停 GET 回傳的推薦曲；僅在完成和解書後才顯示，輸入答辯頁不播放 */
 let mediationCachedRecommendedMusic = null;
 let isAudioPrimed = false;
+let homeBgAudio = null;
 
 function show(el) {
   if (!el) return;
@@ -86,6 +87,28 @@ function show(el) {
 function hide(el) {
   if (!el) return;
   el.classList.add("hidden");
+}
+
+function initHomeBackgroundMusic() {
+  const params = new URLSearchParams(window.location.search);
+  if (params.get("mediationToken")) return;
+
+  const candidates = ["/dream%201.wav", "/sin%201.wav"];
+  const pick = candidates[Math.floor(Math.random() * candidates.length)];
+  const audio = new Audio(pick);
+  audio.loop = true;
+  audio.preload = "auto";
+  audio.volume = 0.35;
+  audio.playsInline = true;
+  homeBgAudio = audio;
+
+  const tryPlay = () => {
+    audio.play().catch(() => {});
+  };
+
+  // Try immediately first; fallback to first user gesture for mobile policies.
+  tryPlay();
+  document.addEventListener("pointerdown", tryPlay, { once: true });
 }
 
 function firstLineIncluding(verdict, keywords) {
@@ -967,6 +990,11 @@ submitBtn.addEventListener("click", async () => {
   const accused = accusedInput ? accusedInput.value.trim() : "";
   await primeRecommendedAudioForMobile();
 
+  if (homeBgAudio) {
+    homeBgAudio.pause();
+    homeBgAudio.currentTime = 0;
+  }
+
   currentVerdictId = null;
   if (mediationApplyBtn) hide(mediationApplyBtn);
   if (verdictExportBtn) hide(verdictExportBtn);
@@ -1117,6 +1145,8 @@ submitBtn.addEventListener("click", async () => {
 
 // ✅ token 進入調停流程
 (() => {
+  initHomeBackgroundMusic();
+
   const params = new URLSearchParams(window.location.search);
   const token = params.get("mediationToken");
   if (!token) return;
@@ -1129,6 +1159,10 @@ submitBtn.addEventListener("click", async () => {
   if (recommendedAudioEl) {
     recommendedAudioEl.pause();
     recommendedAudioEl.currentTime = 0;
+  }
+  if (homeBgAudio) {
+    homeBgAudio.pause();
+    homeBgAudio.currentTime = 0;
   }
 
   if (mediationBackBtn) mediationBackBtn.focus?.();
