@@ -70,6 +70,7 @@ const mediationRecommendedAudioEl = document.getElementById(
 const verdictExportBtn = document.getElementById("verdict-export-btn");
 const verdictShareBtn = document.getElementById("verdict-share-btn");
 const verdictShareModal = document.getElementById("verdict-share-modal");
+const homeBgAudioEl = document.getElementById("home-bg-audio");
 
 let currentVerdictId = null;
 let currentMediationToken = null;
@@ -78,6 +79,11 @@ let currentRecommendedMusic = null;
 let mediationCachedRecommendedMusic = null;
 let isAudioPrimed = false;
 let homeBgAudio = null;
+let homeBgTrackUrl = "";
+let homeBgUnlocked = false;
+
+const HOME_BG_TRACKS = ["/dream%201.wav", "/sin%201.wav"];
+const TRIAL_SFX_TRACK = "/dream%202%20.wav";
 
 function show(el) {
   if (!el) return;
@@ -89,26 +95,94 @@ function hide(el) {
   el.classList.add("hidden");
 }
 
+function warmAudioElement(el, src) {
+  if (!el || !src) return;
+  try {
+    if (el.src !== src) el.src = src;
+    el.preload = "auto";
+    el.load();
+  } catch (err) {
+    console.log("⚠️ 音訊預載失敗", err);
+  }
+}
+
+function warmCriticalAudio() {
+  HOME_BG_TRACKS.forEach((src) => {
+    try {
+      const preloader = new Audio(src);
+      preloader.preload = "auto";
+      preloader.load();
+    } catch {
+      // ignore
+    }
+  });
+
+  if (soundEffect) {
+    const src = soundEffect?.currentSrc || soundEffect?.querySelector("source")?.src;
+    warmAudioElement(soundEffect, src || TRIAL_SFX_TRACK);
+  }
+}
+
+function unlockHomeBackgroundAudio(audio) {
+  if (!audio || homeBgUnlocked) return;
+
+  const cleanup = () => {
+    window.removeEventListener("pageshow", tryUnlock);
+    window.removeEventListener("focus", tryUnlock);
+    document.removeEventListener("visibilitychange", onVisibleUnlock);
+    document.removeEventListener("pointerdown", tryUnlock);
+    document.removeEventListener("touchstart", tryUnlock);
+    document.removeEventListener("click", tryUnlock);
+  };
+
+  const tryUnlock = async () => {
+    try {
+      await audio.play();
+      audio.pause();
+      audio.currentTime = 0;
+      homeBgUnlocked = true;
+      cleanup();
+      // 解鎖成功後立即嘗試正式播放首頁背景音樂
+      playHomeBackgroundMusic();
+    } catch {
+      // keep waiting for next event/gesture
+    }
+  };
+
+  const onVisibleUnlock = () => {
+    if (document.visibilityState === "visible") tryUnlock();
+  };
+
+  window.addEventListener("pageshow", tryUnlock);
+  window.addEventListener("focus", tryUnlock);
+  document.addEventListener("visibilitychange", onVisibleUnlock);
+  document.addEventListener("pointerdown", tryUnlock, { passive: true });
+  document.addEventListener("touchstart", tryUnlock, { passive: true });
+  document.addEventListener("click", tryUnlock, { passive: true });
+}
+
+function playHomeBackgroundMusic() {
+  if (!homeBgAudio) return;
+  homeBgAudio.play().catch(() => {});
+}
+
 function initHomeBackgroundMusic() {
   const params = new URLSearchParams(window.location.search);
   if (params.get("mediationToken")) return;
 
-  const candidates = ["/dream%201.wav", "/sin%201.wav"];
-  const pick = candidates[Math.floor(Math.random() * candidates.length)];
-  const audio = new Audio(pick);
+  const pick = HOME_BG_TRACKS[Math.floor(Math.random() * HOME_BG_TRACKS.length)];
+  homeBgTrackUrl = pick;
+  const audio = homeBgAudioEl || new Audio();
+  audio.src = pick;
   audio.loop = true;
   audio.preload = "auto";
   audio.volume = 0.35;
   audio.playsInline = true;
+  audio.load();
   homeBgAudio = audio;
 
-  const tryPlay = () => {
-    audio.play().catch(() => {});
-  };
-
-  // Try immediately first; fallback to first user gesture for mobile policies.
-  tryPlay();
-  document.addEventListener("pointerdown", tryPlay, { once: true });
+  unlockHomeBackgroundAudio(audio);
+  playHomeBackgroundMusic();
 }
 
 function firstLineIncluding(verdict, keywords) {
@@ -232,7 +306,7 @@ async function primeRecommendedAudioForMobile() {
     const unlockSrc =
       soundEffect?.currentSrc ||
       soundEffect?.querySelector("source")?.src ||
-      "/gavel-sound.wav";
+      TRIAL_SFX_TRACK;
 
     // 1) 先解鎖推薦歌曲實際播放用的 audio element（成功率較高）
     if (recommendedAudioEl) {
@@ -917,6 +991,9 @@ retryBtn.addEventListener("click", () => {
 
   soundEffect.pause();
   soundEffect.currentTime = 0;
+
+  // 回到首頁後恢復背景循環音樂
+  playHomeBackgroundMusic();
 });
 
 if (mediationApplyBtn) {
@@ -1162,6 +1239,7 @@ submitBtn.addEventListener("click", async () => {
 
 // ✅ token 進入調停流程
 (() => {
+  warmCriticalAudio();
   initHomeBackgroundMusic();
 
   const params = new URLSearchParams(window.location.search);

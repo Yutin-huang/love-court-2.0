@@ -12,21 +12,35 @@
   <style>
     html, body {
       overflow: hidden;
+      width: 100%;
       height: 100%;
+      min-height: 100dvh;
       margin: 0;
       padding: 0;
       touch-action: pan-y;
+      background-color: #ffe6f0;
     }
 
     * {
       box-sizing: border-box;
     }
 
-    .responsive-wrapper {
-      position: relative;
+    .stage-screen {
+      position: fixed;
+      inset: 0;
       width: 100vw;
       height: 100dvh;
       min-height: 100dvh;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+    }
+
+    .responsive-wrapper {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
       overflow: hidden;
     }
 
@@ -326,6 +340,7 @@
 
 
     <!-- 🔊 音效 -->
+    <audio id="home-bg-audio" preload="auto" playsinline webkit-playsinline></audio>
     <audio id="sound-effect" preload="auto" playsinline webkit-playsinline>
       <source src="/dream%202%20.wav" type="audio/wav" />
     </audio>
