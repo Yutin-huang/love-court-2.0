@@ -9,6 +9,7 @@ import { dirname } from 'path';
 import verdictRouter from './verdict-gpt.js';
 import mediationRouter from './routes/mediation.js';
 import logRouter from './routes/log.js';
+import adminRouter from './routes/admin.js';
 
 // ✅ 初始化
 const app = express();
@@ -27,6 +28,7 @@ app.use(express.json());
 // ✅ 路由設定
 app.use('/api/verdict', verdictRouter); // AI 判決 API
 app.use('/api/mediation', mediationRouter); // 調停 API
+app.use('/', adminRouter);              // 管理資料 API
 app.use('/', logRouter);                // 後台紀錄頁面
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));

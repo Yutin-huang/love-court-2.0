@@ -1,0 +1,215 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>LoveCourt 管理頁</title>
+    <style>
+      :root {
+        color-scheme: light;
+      }
+      body {
+        margin: 0;
+        font-family: "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif;
+        background: #fff6fa;
+        color: #2a2a2a;
+      }
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 20px 16px 40px;
+      }
+      h1 {
+        margin: 0 0 8px;
+        color: #c2185b;
+        font-size: 28px;
+      }
+      .hint {
+        margin: 0 0 16px;
+        color: #6d5a66;
+        font-size: 14px;
+      }
+      .toolbar {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin-bottom: 12px;
+      }
+      .toolbar input,
+      .toolbar select,
+      .toolbar button {
+        border: 1px solid #d8bfd0;
+        border-radius: 10px;
+        padding: 8px 10px;
+        font-size: 14px;
+        background: #fff;
+      }
+      .toolbar button {
+        cursor: pointer;
+        background: #ffe2f0;
+      }
+      .table-wrap {
+        background: #fff;
+        border: 1px solid #f2d7e6;
+        border-radius: 12px;
+        overflow: auto;
+        box-shadow: 0 2px 12px rgba(194, 24, 91, 0.08);
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        min-width: 980px;
+      }
+      th,
+      td {
+        border-bottom: 1px solid #f1e3eb;
+        padding: 10px;
+        text-align: left;
+        vertical-align: top;
+        font-size: 13px;
+        line-height: 1.5;
+      }
+      th {
+        position: sticky;
+        top: 0;
+        background: #ffeef6;
+        z-index: 1;
+      }
+      tr:hover td {
+        background: #fff9fc;
+      }
+      .small {
+        color: #8b7281;
+        font-size: 12px;
+      }
+      .empty {
+        padding: 20px;
+        color: #8b7281;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="container">
+      <h1>LoveCourt MongoDB 管理頁</h1>
+      <p class="hint">顯示最近 300 筆判決資料，可搜尋與分類篩選。</p>
+
+      <div class="toolbar">
+        <input id="keyword" type="text" placeholder="搜尋：心事、對象、判決..." />
+        <select id="category">
+          <option value="">全部分類</option>
+        </select>
+        <button id="refresh-btn" type="button">重新整理</button>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>時間</th>
+              <th>戀愛心事</th>
+              <th>控訴對象</th>
+              <th>分類</th>
+              <th>判決</th>
+            </tr>
+          </thead>
+          <tbody id="table-body"></tbody>
+        </table>
+        <div id="empty" class="empty" hidden>目前沒有符合資料</div>
+      </div>
+    </main>
+
+    <script>
+      const bodyEl = document.getElementById("table-body");
+      const emptyEl = document.getElementById("empty");
+      const keywordEl = document.getElementById("keyword");
+      const categoryEl = document.getElementById("category");
+      const refreshBtn = document.getElementById("refresh-btn");
+
+      let allRows = [];
+
+      function escapeHtml(input) {
+        return String(input || "")
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;");
+      }
+
+      function toLocalTime(iso) {
+        if (!iso) return "";
+        const d = new Date(iso);
+        if (Number.isNaN(d.getTime())) return "";
+        return d.toLocaleString("zh-TW");
+      }
+
+      function renderCategoryOptions(data) {
+        const set = new Set(data.map((x) => x.category).filter(Boolean));
+        const categories = Array.from(set).sort((a, b) => a.localeCompare(b, "zh-Hant"));
+        categoryEl.innerHTML =
+          '<option value="">全部分類</option>' +
+          categories.map((c) => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join("");
+      }
+
+      function filterRows() {
+        const keyword = keywordEl.value.trim().toLowerCase();
+        const category = categoryEl.value.trim();
+        return allRows.filter((row) => {
+          if (category && row.category !== category) return false;
+          if (!keyword) return true;
+          const haystack = [
+            row.story || row.complaint || "",
+            row.accused || "",
+            row.category || "",
+            row.judgement || row.rawVerdict || "",
+          ]
+            .join(" ")
+            .toLowerCase();
+          return haystack.includes(keyword);
+        });
+      }
+
+      function renderTable() {
+        const rows = filterRows();
+        bodyEl.innerHTML = rows
+          .map((item) => {
+            const story = item.story || item.complaint || "";
+            const judgement = item.judgement || item.rawVerdict || "";
+            return `<tr>
+              <td><div>${escapeHtml(toLocalTime(item.createdAt))}</div><div class="small">${escapeHtml(item._id || "")}</div></td>
+              <td>${escapeHtml(story)}</td>
+              <td>${escapeHtml(item.accused || "—")}</td>
+              <td>${escapeHtml(item.category || "—")}</td>
+              <td>${escapeHtml(judgement)}</td>
+            </tr>`;
+          })
+          .join("");
+        emptyEl.hidden = rows.length !== 0;
+      }
+
+      async function loadData() {
+        refreshBtn.disabled = true;
+        refreshBtn.textContent = "讀取中...";
+        try {
+          const res = await fetch("/api/admin-data");
+          if (!res.ok) throw new Error("讀取失敗");
+          allRows = await res.json();
+          renderCategoryOptions(allRows);
+          renderTable();
+        } catch (err) {
+          console.error(err);
+          bodyEl.innerHTML = "";
+          emptyEl.hidden = false;
+          emptyEl.textContent = "資料讀取失敗，請確認 MongoDB 與後端服務是否正常。";
+        } finally {
+          refreshBtn.disabled = false;
+          refreshBtn.textContent = "重新整理";
+        }
+      }
+
+      keywordEl.addEventListener("input", renderTable);
+      categoryEl.addEventListener("change", renderTable);
+      refreshBtn.addEventListener("click", loadData);
+      loadData();
+    </script>
+  </body>
+</html>
