@@ -15,19 +15,18 @@
       height: 100%;
       margin: 0;
       padding: 0;
-      touch-action: none;
+      touch-action: pan-y;
     }
 
     * {
       box-sizing: border-box;
-      max-width: 100vw;
-      max-height: 100vh;
     }
 
     .responsive-wrapper {
       position: relative;
       width: 100vw;
-      height: 100vh;
+      height: 100dvh;
+      min-height: 100dvh;
       overflow: hidden;
     }
 
@@ -35,7 +34,7 @@
       position: absolute;
       width: 100%;
       height: 100%;
-      object-fit: contain; /* ✅ 確保完整圖片呈現 */
+      object-fit: cover; /* ✅ 滿版鋪滿背景 */
       object-position: center;
       z-index: 0;
       background-color: #ffe6f0;
