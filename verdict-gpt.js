@@ -42,12 +42,18 @@ const SPOTIFY_TRACK_URLS = {
   'safe place': 'https://open.spotify.com/track/4HlDLM6yrlY6ZaGaNthH9g?si=89e185f53afd4def',
 };
 
+/**
+ * 音檔／封面檔共用：取主檔名（去副檔名）再比對，避免只用 /[a-z0-9]+$/ 漏掉邊界或與封面對不起來。
+ */
+function mediaStemFromFilename(filename) {
+  if (!filename) return '';
+  const ext = path.extname(filename);
+  const base = path.basename(filename, ext);
+  return base.trim().normalize('NFC').toLowerCase().replace(/\s+/g, ' ');
+}
+
 function normalizeSongStem(audioFile) {
-  return audioFile
-    .replace(/\.[a-z0-9]+$/i, '')
-    .trim()
-    .toLowerCase()
-    .replace(/\s+/g, ' ');
+  return mediaStemFromFilename(audioFile);
 }
 
 function spotifyUrlForAudioFile(audioFile) {
@@ -355,10 +361,8 @@ function inferCaseTypeFromText(text) {
 
 function pickCoverForAudio(audioFile, coverFiles) {
   if (!audioFile || !coverFiles?.length) return null;
-  const stem = audioFile.replace(/\.[a-z0-9]+$/i, '').trim().toLowerCase();
-  const exact = coverFiles.find(
-    (f) => f.replace(/\.[a-z0-9]+$/i, '').trim().toLowerCase() === stem
-  );
+  const stem = mediaStemFromFilename(audioFile);
+  const exact = coverFiles.find((f) => mediaStemFromFilename(f) === stem);
   return exact || pickRandom(coverFiles);
 }
 
