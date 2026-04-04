@@ -1,15 +1,11 @@
 import express from 'express';
 import crypto from 'crypto';
-import { OpenAI } from 'openai';
 import Verdict from '../models/Verdict.js';
 import Mediation from '../models/Mediation.js';
 import { pickRecommendedMusic, parseVerdictText } from '../verdict-gpt.js';
+import { getOpenAI } from '../lib/openai-client.js';
 
 const router = express.Router();
-
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
 
 function generateToken() {
   // 128-bit token is plenty for this MVP (hex => 32 chars).
@@ -68,7 +64,7 @@ function resolveRecommendedMusicForVerdict(verdict) {
 async function generateSoftenedStory({ category, accused, originalStory }) {
   const accusedText = accused?.trim() ? accused.trim() : '（未填）';
 
-  const completion = await openai.chat.completions.create({
+  const completion = await getOpenAI().chat.completions.create({
     model: 'gpt-4o',
     temperature: 0.7,
     max_tokens: 350,
@@ -89,7 +85,7 @@ async function generateSoftenedStory({ category, accused, originalStory }) {
 }
 
 async function generateSettlementText({ softenedStory, response }) {
-  const completion = await openai.chat.completions.create({
+  const completion = await getOpenAI().chat.completions.create({
     model: 'gpt-4o',
     temperature: 0.75,
     max_tokens: 500,

@@ -2,15 +2,11 @@ import 'dotenv/config';
 import express from 'express';
 import fs from 'fs';
 import path from 'path';
-import { OpenAI } from 'openai';
 import { fileURLToPath } from 'url';
 import Verdict, { CATEGORY_VALUES } from './models/Verdict.js';
+import { getOpenAI } from './lib/openai-client.js';
 
 const router = express.Router();
-
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -465,13 +461,9 @@ function pickRecommendedMusic(caseType, textForFallback) {
   return null;
 }
 
-/** 監控用：不呼叫 GPT，只確認路由與金鑰存在 */
+/** 監控用：只代表此 router 已掛載，不檢查外部依賴（避免 UptimeRobot 判 503） */
 router.get('/health', (req, res) => {
-  const hasKey = Boolean(process.env.OPENAI_API_KEY?.trim());
-  if (!hasKey) {
-    return res.status(503).json({ ok: false, error: 'OPENAI_API_KEY missing' });
-  }
-  res.status(200).json({ ok: true, openai: true });
+  res.status(200).json({ ok: true });
 });
 
 router.post('/', async (req, res) => {
@@ -495,7 +487,7 @@ router.post('/', async (req, res) => {
 戀愛心事：
 ${story}`;
 
-    const completion = await openai.chat.completions.create({
+    const completion = await getOpenAI().chat.completions.create({
       model: 'gpt-4o',
       messages: [
         { role: 'system', content: buildSystemPrompt(category, accused) },
