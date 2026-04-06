@@ -11,6 +11,26 @@ html, body {
   overflow: hidden;
 }
 
+/* 首頁右下角：開啟 MongoDB 資料管理頁（同網域 /admin.html） */
+.admin-site-entry {
+  position: fixed;
+  bottom: max(10px, env(safe-area-inset-bottom, 0px));
+  right: max(10px, env(safe-area-inset-right, 0px));
+  z-index: 50;
+  margin: 0;
+  font-family: 'Noto Sans TC', '微軟正黑體', sans-serif;
+  font-size: 12px;
+  pointer-events: auto;
+}
+.admin-site-entry a {
+  color: rgba(194, 24, 91, 0.55);
+  text-decoration: none;
+}
+.admin-site-entry a:hover {
+  text-decoration: underline;
+  color: #c2185b;
+}
+
 /* ✅ 背景圖設定（桌機／手機共用） */
 .responsive-wrapper {
   position: relative;
