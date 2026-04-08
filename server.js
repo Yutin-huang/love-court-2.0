@@ -43,6 +43,10 @@ mongoose.connection.on('disconnected', () => {
   console.warn('⚠️ MongoDB 連線中斷（將自動重連）');
 });
 
+mongoose.connection.on('reconnected', () => {
+  console.log('✅ MongoDB 已重新連線');
+});
+
 mongoose.connection.on('error', (err) => {
   console.error('❌ MongoDB 連線錯誤', err?.message || err);
 });
@@ -94,7 +98,8 @@ app.use((err, req, res, next) => {
 
 // ✅ 啟動伺服器
 const PORT = process.env.PORT || 3000;
-const server = app.listen(PORT, () => {
+// Render 要求綁在 0.0.0.0，否則外網／負載均衡連不到會出現 Cloudflare 521
+const server = app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Server running at http://localhost:${PORT}`);
 });
 
